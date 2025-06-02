@@ -1,0 +1,414 @@
+,Course Code,Course Name,T,U,L,Existing
+,,,,,,
+,AID101,Fundamentals of Data Science,3,2,0,38
+,AID304,Big Data Analytics,3,2,0,32
+,ARCH100,Introduction to Architectural Design,1,2,0,18
+,ARCH101,Basic Design Communication,1,2,0,19
+,ARCH102,History of Architecture I,1,2,0,59
+,ARCH106,Introduction to Building Technology,1,2,0,46
+,ARCH107,Understanding Art and Architecture,2,0,0,31
+,ARCH108,Introduction to Architectural Design II,1,2,0,17
+,ARCH108,Introduction to Architectural Design II,1,2,0,24
+,ARCH109,Basic Design Communication II,1,1,0,20
+,ARCH109,Basic Design Communication II,1,1,0,22
+,ARCH110,Freehand Drawing,1,1,0,17
+,ARCH201,Architectural Design Studio I,3,5,0,12
+,ARCH201,Architectural Design Studio I,3,5,0,7
+,ARCH202,Architectural Design Studio II,3,5,0,15
+,ARCH202,Architectural Design Studio II,3,5,0,14
+,ARCH202,Architectural Design Studio II,3,5,0,14
+,ARCH208,Architectural Communication,1,2,0,33
+,ARCH208,Architectural Communication,1,2,0,30
+,ARCH209,History of Architecture III,1,2,0,54
+,ARCH210,Structural Design II,2,1,0,43
+,ARCH211,Building Services II,1,1,0,35
+,ARCH216,Introduction to CAD,0,2,0,14
+,ARCH216-6,Introduction to CAD,0,3,0,1
+,ARCH303,Architectural Design Studio III,3,5,0,13
+,ARCH303,Architectural Design Studio III,3,5,0,14
+,ARCH304,Architectural Design Studio IV,3,5,0,11
+,ARCH304,Architectural Design Studio IV,3,5,0,12
+,ARCH307,Sustainable Design,1,5,0,44
+,ARCH308,Urban History,1,1,0,39
+,ARCH311,Materials in Architecture,2,0,0,4
+,ARCH357,Bosnian Architecture,0,2,0,18
+,ARCH358,Building Constructions II,2,1,0,22
+,ARCH360,Digital Architecture and Fabrication,1,1,0,36
+,ARCH380,Work placement/Internship,0,14,0,16
+,ARCH403,Management in Architecture,1,1,0,31
+,ARCH405,Architectural Design Studio V,3,5,0,6
+,ARCH406,Final Design Studio,3,5,0,19
+,ARCH412,Advanced Building Construction,1,1,0,17
+,ARCH414,Introduction to Islamic Architecture,2,0,0,24
+,ARCH504,Graduate Dissertation,0,3,0,4
+,ARCH508,Graduate Studio,0,6,0,4
+,ARCH510,Conservation and Restoration,2,0,0,9
+,ARCH517,Master Graduation Project,0,6,0,15
+,ARCH518,Master Thesis,0,12,0,7
+,ARCH569,Sustainable Design Studio,3,0,0,5
+,ARCH570,Infill Design Studio,3,1,0,5
+,BIO305,Biochemistry II,3,0,0,16
+,BIO306,General Microbiology,3,2,0,21
+,BIO312,Techniques in Molecular Biology,3,1,0,13
+,BIO370,Work placement/Internship,0,14,0,4
+,BIO404,Agricultural Biotechnology,3,0,0,19
+,BIO407,Protein Engineering,3,0,0,7
+,BIO424,Introduction to Forensic Science,3,2,0,19
+,BIO513,Advanced Cell Biology,3,0,0,9
+,BIO514,O-mics Technology,2,4,0,6
+,BIO518,Special Topics in Life Sciences I,3,0,0,9
+,BIO590,Master Thesis,0,0,0,6
+,BIO604,Advanced Structural Bioinformatics,3,1,0,3
+,BIO646,Special Topics in Life Sciences II,3,0,0,3
+,BIO790,Doctoral Dissertation,0,120,0,3
+,BOS111,Spoken Bosnian I,2,0,0,61
+,BOS111,Spoken Bosnian I,2,0,0,63
+,BOS112,Spoken Bosnian II,2,0,0,44
+,BOS112,Spoken Bosnian II,2,0,0,45
+,BOS112,Spoken Bosnian II,2,0,0,38
+,BUS602,Quantitative Research Methods in Business,3,0,0,2
+,BUS690,Directed Research Project,0,0,0,0
+,BUS698,Doctoral Thesis,0,120,0,1
+,CS103,Introduction to Programming,3,0,0,116
+,CS103,Introduction to Programming,3,0,0,104
+,CS105,Advanced Programming,3,2,0,110
+,CS105,Advanced Programming,3,2,0,66
+,CS207,Analysis of Algorithms,3,2,0,6
+,CS303,Digital Design,3,0,0,26
+,CS304,Computer Architecture,3,2,0,127
+,CS306,Database Management,3,2,0,140
+,CS308,Software Engineering,3,2,0,100
+,CS310,Human Computer Interaction,3,2,0,91
+,CS314,Systems Programming,3,2,0,40
+,CS370,Work placement/Internship,0,14,0,10
+,CS404,Artificial Intelligence,3,2,0,18
+,CS413,Developing the Interactive Web,3,2,0,23
+,CS417,Introduction to Data Mining,3,0,0,27
+,CS427,Computer and Network Security,3,0,0,18
+,CS509,Advanced Computer Architecture,3,0,0,13
+,CS511,Advanced Artificial Intelligence,3,0,0,15
+,CS580,Master Graduation Project,0,0,0,5
+,CS590,Master Thesis,0,0,0,14
+,CS600,Quantitative Methods of Scientific Research,3,0,0,3
+,CS701,Scientific Activity for PhD,0,12,0,4
+,CS790,PhD Thesis,0,120,0,2
+,CULT101,Understanding Cultural Encounters,2,0,0,50
+,CULT101,Understanding Cultural Encounters,2,0,0,33
+,CULT701,Doctoral Thesis,0,120,0,1
+,ECON108,MATLAB,2,0,0,19
+,ECON112,Introduction to Macroeconomics,3,0,0,72
+,ECON112,Introduction to Macroeconomics,3,0,0,75
+,ECON202,Intermediate Macroeconomics,3,2,0,31
+,ECON202,Intermediate Macroeconomics,3,2,0,30
+,ECON204,International Political Economy,3,0,0,36
+,ECON221,Business Statistics II,3,2,0,27
+,ECON221,Business Statistics II,3,2,0,24
+,ECON311,Special Topics in Economics,3,0,0,17
+,ECON320,Public Economics,3,0,0,5
+,ECON404,International Monetary System,3,0,0,8
+,ECON430,Growth and Development,3,0,0,11
+,ECON470,Work placement/Internship,0,14,0,2
+,ECON491,Graduation Project,0,12,0,1
+,ECON506,Applied Econometrics,3,0,0,2
+,ECON599,Master Thesis,0,12,0,1
+,ECON601,Applied Econometrics,3,0,0,2
+,ECON800,PhD Dissertation,0,120,0,1
+,EDU102,Introduction to Pedagogy,3,0,0,3
+,EDU103,Introduction to Foreign Language Pedagogy,3,0,0,52
+,EDU323,Didactics,2,1,0,11
+,EDU583,Methodology of Scientific Work,3,0,0,7
+,EE301,Analog Electronics II,3,2,2,12
+,EE305,Instrumentation and Measurements,3,2,1,29
+,EE321,Electrical Machines,3,2,1,10
+,EE325,Embedded Systems,2,3,0,63
+,EE370,Work placement/Internship,0,14,0,3
+,EE422,Power Electronics,1,5,0,7
+,EE429,Digital Power System Protection,3,2,0,15
+,EE599,Master Thesis,2,20,0,8
+,EE603,Advanced Power System Protection,3,0,0,3
+,EE699,PhD Dissertation,0,120,0,4
+,ELIT100,Academic English and Effective Communication,2,1,0,30
+,ELIT100,Academic English and Effective Communication,2,1,0,22
+,ELIT100,Academic English and Effective Communication,2,1,0,26
+,ELIT100,Academic English and Effective Communication,2,1,0,33
+,ELIT100,Academic English and Effective Communication,2,1,0,31
+,ELIT100,Academic English and Effective Communication,2,1,0,0
+,ELIT100,Academic English and Effective Communication,2,1,0,28
+,ELIT103,Nonverbal Communication,2,0,0,22
+,ELIT103,Nonverbal Communication,2,0,0,19
+,ELIT200,Critical Reading and Writing,2,1,0,30
+,ELIT200,Critical Reading and Writing,2,1,0,20
+,ELIT200,Critical Reading and Writing,2,1,0,24
+,ELIT200,Critical Reading and Writing,2,1,0,35
+,ELIT200,Critical Reading and Writing,2,1,0,32
+,ELIT200,Critical Reading and Writing,2,1,0,12
+,ELIT200,Critical Reading and Writing,2,1,0,32
+,ELIT200,Critical Reading and Writing,2,1,0,30
+,ELIT200,Critical Reading and Writing,2,1,0,29
+,ELIT200,Critical Reading and Writing,2,1,0,33
+,ELIT200,Critical Reading and Writing,2,1,0,36
+,ELIT200,Critical Reading and Writing,2,1,0,37
+,ELIT200,Critical Reading and Writing,2,1,0,30
+,ELIT200,Critical Reading and Writing,2,1,0,30
+,ELIT201,Academic Writing,1,2,0,41
+,ELIT203,Survey of English Literature II,3,0,0,27
+,ELIT208,Classical Mythology,3,0,0,65
+,ELIT401,The Romantic Age,2,1,0,5
+,ELIT406,Contemporary English Drama,2,1,0,28
+,ELIT413,Literary Theory and Criticism II,3,1,0,6
+,ELIT415,Shakespeare,3,0,0,12
+,ELIT598,Master Thesis,0,12,0,6
+,ELIT699,PhD Thesis,0,120,0,2
+,ELIT701,Scientific Activity I,3,0,0,2
+,ELIT702,Scientific Activity II,0,12,0,2
+,ELT105,Introduction to Linguistics,3,0,0,54
+,ELT212,English Syntax,2,1,0,14
+,ELT322,English Language Teaching Methodology,2,1,0,14
+,ELT323,Early Foreign Language Learning,3,0,0,33
+,ELT370,Work placement/Internship,0,14,0,1
+,ELT371,Teaching Practice I,0,7,0,2
+,ELT471,Teaching Practice II,0,7,0,3
+,ELT562,Lifelong Learning and English Language Teaching,2,1,0,9
+,ELT565,Evaluation in English Language Teaching,2,1,0,9
+,ELT571,Teaching Practice III,0,7,0,2
+,ELT599,Master Thesis,0,12,0,4
+,ELT660,Applied Linguistics,3,0,0,1
+,ELT670,Educational Philosophy and English Language Teaching,2,1,0,1
+,ENS201,Electromagnetism I,3,0,2,17
+,ENS203,Electrical Circuits I,3,0,2,137
+,ENS204,Thermodynamics II,3,0,0,11
+,ENS206,System Modelling and Control,3,3,0,18
+,ENS207-3,Engineering Graphics,1,2,0,25
+,ENS207-6,Engineering Graphics,1,2,0,46
+,ENS207-6,Engineering Graphics,1,2,0,0
+,ENS209-3,Statics,3,2,0,36
+,ENS209-6,Statics,3,2,0,3
+,ENS211,Signals and Systems,3,2,0,24
+,ENS309,Ethics in Engineering and Natural Sciences,3,1,0,153
+,ENS490,Graduation Project,2,2,0,71
+,ENS666,Advanced Research Methodologies and Design,6,0,0,3
+,IATA101,Atatürk ?lkeleri ve ?nk?lap Tarihi 1,2,0,0,13
+,IATA102,Atatürk ?lkeleri ve ?nk?lap Tarihi 2,2,0,0,29
+,IBF105,Financial Literacy,2,0,0,48
+,IBF205,Principles of International Business,3,0,0,53
+,IBF205,Principles of International Business,3,0,0,42
+,IBF208,Business Finance,3,2,0,35
+,IBF208,Business Finance,3,2,0,34
+,IBF310,Business Ethics,3,0,0,49
+,IBF401,International Finance,3,0,0,31
+,IBF407,Special Topics in Finance,3,0,0,9
+,IBF409,Investment and Portfolio Management,3,0,0,15
+,IBF410,Real Estate Markets,3,0,0,26
+,IBF470,Work placement/Internship,0,14,0,6
+,IBF507,Managing the Multinational Enterprise,3,0,0,22
+,IBF508,Master Thesis (Professional),0,12,0,1
+,IBF562,Special Topics in Finance,3,0,0,27
+,IBF592,Master Graduation Project,0,12,0,4
+,IBF599,Master Thesis,3,0,0,4
+,IE303,Operations Research I,3,0,0,76
+,IE305,Work Analysis and Design,2,2,0,5
+,IE307,Quality and Reliability Engineering,3,2,0,13
+,IE425,Computer Aided Design and Manufacturing,3,0,0,6
+,IE502,Advanced Quality and Reliability Engineering,3,0,0,4
+,IR100,Understanding the Contemporary World through Current Events,3,0,0,70
+,IR101,Introduction to International Relations,3,0,0,86
+,IR212,Politics in Europe,3,0,0,21
+,IR213,International Issues in the Balkans,3,0,0,13
+,IR214,International Law,3,0,0,15
+,IR216,Foreign Policy Analysis,3,0,0,10
+,IR304,Security Studies,3,0,0,23
+,IR305,International Organizations,3,1,0,23
+,IR467,Energy Security,3,0,0,15
+,IR470,Work placement/Internship,0,14,0,3
+,IR472,Human Rights,3,0,0,10
+,IR478,Islam in World Politics,3,0,0,8
+,IR491,Graduation Project,3,0,0,5
+,IR520,International Security,3,0,0,3
+,IR590,Master Thesis,3,0,0,5
+,IR651,World Energy Politics,3,0,0,2
+,IR652,Security and Strategy,3,0,0,1
+,IR690,PhD Dissertation,0,120,0,1
+,ITA101,Spoken Italian I,3,0,0,35
+,ITA102,Spoken Italian II,3,0,0,6
+,ITRD101,Türk Dili 1,2,0,0,13
+,ITRD102,Türk Dili 2,2,0,0,29
+,LAW104,Civil Law II,3,0,0,38
+,LAW106,Roman Law,3,0,0,39
+,LAW118,Constitutional Law II,2,2,0,43
+,LAW120,Introduction to Law II,3,0,0,34
+,LAW202,Administrative Law II,3,0,0,56
+,LAW204,Contract Law II,2,2,0,45
+,LAW206,Criminal Law II,3,0,0,36
+,LAW210,Business Law,2,2,0,46
+,LAW218,Legal Writing and Drafting,2,1,0,43
+,LAW242,Law and Literature,3,0,0,38
+,LAW302,Property Law II,3,0,0,44
+,LAW310,Intellectual Property Law,2,2,0,44
+,LAW316,Insurance and Social Security Law,2,2,0,37
+,LAW333,Tort Law,3,0,0,40
+,LAW402,Commercial Law II,2,1,0,20
+,LAW406,Execution and Bankruptcy Law,2,2,0,20
+,LAW408,Criminal Procedure Law II,2,1,0,20
+,LAW416,Inheritance Law,2,2,0,21
+,LAW443,Legal Ethics,3,0,0,14
+,LAW530,Comparative Constitutional Law,3,0,0,4
+,LAW595,Master Thesis,0,12,0,7
+,MAC102,Introduction to Media Studies,1,2,0,7
+,MAN102,Introduction to Management,3,0,0,84
+,MAN105,Corporate Social Responsibility,2,0,0,68
+,MAN302,Human Resources Management,3,0,0,26
+,MAN303,Entrepreneurship and Small Business Management,3,0,0,42
+,MAN304,Organizational Behavior,3,0,0,47
+,MAN328,Sales Management,3,0,0,11
+,MAN332,Business Law,3,0,0,44
+,MAN352,Consumer Behaviour,3,0,0,73
+,MAN402,Strategic Management,3,0,0,30
+,MAN406,Innovation Management,3,0,0,15
+,MAN443,International Marketing,3,0,0,14
+,MAN453,Project Management,3,0,0,19
+,MAN470,Work placement/Internship,0,14,0,5
+,MAN499,Graduation Project,3,0,0,1
+,MATH100,Mathematical Skills,3,0,0,88
+,MATH100,Mathematical Skills,3,0,0,20
+,MATH101,Calculus I,3,0,0,100
+,MATH101,Calculus I,3,0,0,92
+,MATH102,Calculus II,3,2,0,128
+,MATH201,Linear Algebra,3,0,2,164
+,MATH201,Linear Algebra,3,0,2,116
+,MATH201,Linear Algebra,3,0,2,12
+,MATH205,Numerical Analysis,3,0,0,107
+,MATH207,Vector Calculus,3,3,0,15
+,MATH209,Discrete Mathematics II,3,0,0,75
+,MATH209,Discrete Mathematics II,3,0,0,65
+,MATH306,Statistical Modelling,3,2,0,30
+,MBA525,Advanced Entrepreneurship and SBM,3,0,0,21
+,MBA535,Business Analysis and Decision Making,3,2,0,31
+,MBA581,Advanced Research Methods in Business,3,0,0,6
+,MBA592,MBA Graduation Research Project,3,2,0,22
+,MBA598,Master Thesis,3,2,0,8
+,ME206,Engineering Materials,3,2,0,11
+,ME211,Strength of Materials II,3,2,0,11
+,ME304,Fluid Mechanics,3,0,0,17
+,ME370,Work placement/Internship,0,14,0,3
+,ME411,Renewable Energy Technology,3,0,0,7
+,ME413,Unmanned Aerial Vehicles,2,1,0,15
+,ME510,Physical Transport Phenomena,3,0,0,3
+,ME580,Special Topics in Engineering,3,0,0,13
+,ME590,Master Thesis,0,12,0,1
+,ME605,Research Activity,3,0,0,3
+,ME690,PhD Thesis,0,120,0,3
+,ME702,Scientific Activity,0,12,0,1
+,ME703,Scientific Activity,0,12,0,2
+,NS103,Biology,3,0,0,16
+,NS112,Understanding Science and Technology,3,0,0,101
+,NS122,Physics II,3,2,1,63
+,NS207,Organic Chemistry,1,2,0,18
+,NS209,Genetics I,3,2,0,28
+,POLS101,Introduction to Philosophy,3,0,0,63
+,POLS211,Politics and the Media,3,1,0,34
+,POLS302,Contemporary Political Thought,3,1,0,13
+,POLS304,Politics in BiH,3,1,0,20
+,POLS499,Graduation Project,2,2,0,1
+,POLS594,Master Thesis,0,12,0,3
+,POLS791,PhD Dissertation,0,120,0,5
+,PSY103,Introduction to Psychology,2,1,0,43
+,PSY103,Introduction to Psychology,2,1,0,30
+,PSY105,Statistics in Psychology,2,1,0,29
+,PSY105,Statistics in Psychology,2,1,0,19
+,PSY303,Personality Psychology,2,1,0,64
+,PSY308,Social Psychology,2,1,0,59
+,PSY310,Introduction to Psychopharmacology,2,1,0,41
+,PSY311,Organizational Psychology,2,1,0,31
+,PSY312,Clinical Psychology,2,1,0,37
+,PSY329,Psychometrics,2,1,0,29
+,PSY336,Psychotherapy and Counseling,2,1,0,39
+,PSY370,Work placement/Internship,0,14,0,15
+,PSY402,Experimental Psychology,2,1,0,35
+,PSY406,Positive Psychology,2,1,0,30
+,PSY412,Abnormal Psychology,2,1,0,32
+,PSY414,Psychology of Adulthood and Aging,2,1,0,38
+,PSY424,Social Cognition,2,1,0,33
+,PSY457,Emotion and Cognition,2,1,0,48
+,PSY458,Neuropsychology,2,1,0,25
+,PSY490,Graduation Project,1,2,0,14
+,PSY496,Research Activity,3,0,0,7
+,PSY519,Clinical Psychopharmacology,3,0,0,7
+,PSY524,"Health, Wellbeing and Happiness",3,0,0,4
+,PSY529,"Clinical Interview, Assessment and Professional Ethics",3,0,0,6
+,PSY530,Clinical (Counselling) Practice I,0,3,0,9
+,PSY540,Clinical (Counselling) Practice II,0,3,0,5
+,PSY580,Professional Project or Term Paper,0,0,0,7
+,PSY595,Master Thesis,0,0,0,12
+,PSY690,PhD Dissertation,0,120,0,2
+,SE211,Software Construction,3,2,0,109
+,SE308,Communication Systems and Networks,3,2,0,61
+,SE308,Communication Systems and Networks,3,2,0,61
+,SE370,Work placement/Internship,0,14,0,14
+,SE407,Software Quality Management,3,2,0,56
+,SOC102,Introduction to Sociology,3,0,0,63
+,SOC311,Sociology of Religion,3,0,0,6
+,SOC503,Social and Cultural Theory,3,0,0,3
+,SP500,Professional Development,6,0,0,1
+,SP501,Internship,6,0,0,1
+,SP502,Research Activity,6,0,0,2
+,SPS312,Qualitative Research Methods,3,0,0,8
+,SPS370,Work placement/Internship,0,14,0,4
+,SPS509,EU and Energy Politics,3,0,0,1
+,SPS603,Advanced Studies in Social and Political Theory,2,2,0,1
+,SPS620,Scientific Activity,0,12,0,1
+,TLT114,Türk Dilbilgisi II (?ekil Bilgisi),2,1,0,5
+,TLT212,Edebiyat Bilgi ve Kuramlar? (Edebiyata Giri?),2,1,0,6
+,TLT214,Türkçe Dilbilgisi IV (Cümle Bilgisi),1,2,0,3
+,TLT312,Osmanl? Türkçesi,2,1,0,3
+,TLT317,Dil Becerilerinin (Anlama-Anlatma) Ö?retimi,2,1,0,4
+,TLT319,Türk Dili Tarihi,2,1,0,5
+,TLT371,Ö?retmenlik Uygulamas? I,0,7,0,1
+,TLT411,Divan Edebiyat?,2,1,0,8
+,TLT427,Türk Halk Bilimi,2,1,0,6
+,TLT471,Ö?retmenlik Uygulamas? II,0,7,0,1
+,TLT599,Mast?r Tezi,3,0,0,7
+,TT304,Literary Translation,2,1,0,6
+,TURK111,Spoken Turkish I,2,0,0,47
+,TURK111,Spoken Turkish I,2,0,0,42
+,TURK112,Spoken Turkish II,2,0,0,35
+,TURK112,Spoken Turkish II,2,0,0,40
+,TURK112,Spoken Turkish II,2,0,0,41
+,TURK112,Spoken Turkish II,2,0,0,0
+,TURK112,Spoken Turkish II,2,0,0,6
+,TURK112,Spoken Turkish II,2,0,0,41
+,TURK112,Spoken Turkish II,2,0,0,34
+,TURK112,Spoken Turkish II,2,0,0,41
+,TURK112,Spoken Turkish II,2,0,0,21
+,VA104,Language of Drawing II,2,1,0,31
+,VA104,Language of Drawing II,2,1,0,19
+,VA211,Digital Vector Graphics,3,0,0,33
+,VA211,Digital Vector Graphics,3,0,0,26
+,VA217,Graphic Design II,3,0,0,32
+,VA217,Graphic Design II,3,0,0,12
+,VA217,Graphic Design II,3,0,0,28
+,VA304,Typography II,2,1,0,40
+,VA304,Typography II,2,1,0,17
+,VA306,Digital Photo Imaging,3,0,0,41
+,VA306,Digital Photo Imaging,3,0,0,40
+,VA310,Advanced Drawing I,3,0,0,39
+,VA312,Photography,3,0,0,37
+,VA312,Photography,3,0,0,36
+,VA314,Non Linear Editing II,3,0,0,21
+,VA315,Compositing and Digital Effects II,0,3,0,14
+,VA323,Illustration Studio,3,0,0,24
+,VA323,Illustration Studio,3,0,0,19
+,VA324,History of Graphic Design,2,1,0,71
+,VA334,Packaging Design,1,2,0,47
+,VA341,Digital Desktop Publishing I,3,0,0,40
+,VA370,Work placement/Internship,0,14,0,5
+,VA406,User Experience Design (UX Design) I,3,0,0,41
+,VA416,Design Studio II,1,2,0,22
+,VA443,Informations Graphics Design,3,0,0,34
+,VA451,Documentary Film Production,0,3,0,29
+,VA452,Show Reel Production,0,3,0,25
+,VA455,3D Design II,3,0,0,21
+,VA490,Graduation Project,0,3,0,22
+,VA502,Studio Project II,1,2,0,7
+,VA517,Art and Popular Culture,3,0,0,7
+,VA519,Fields of Design,3,0,0,7
+,VA590,Final Art Project,2,4,0,7
