@@ -9,6 +9,7 @@ import openpyxl
 COURSES_CSV = 'AcilanDersler.csv'
 ROOMS_CSV = 'Class Quotas  E-Campus.csv'
 SCHEDULE_DOCX = '2025spring_schedule_march_28_1515.docx'
+GRADUATE_DOCX = 'graduate.docx'
 
 # 1. Parse course enrollments
 def load_course_enrollments(csv_path):
@@ -91,7 +92,22 @@ def main():
     # Load data
     enrollments_raw = load_course_enrollments(COURSES_CSV)
     capacities = load_room_capacities(ROOMS_CSV)
-    schedule = load_course_schedule(SCHEDULE_DOCX)
+    schedule_main = load_course_schedule(SCHEDULE_DOCX)
+    schedule_grad = load_course_schedule(GRADUATE_DOCX)
+    schedule = schedule_main + schedule_grad
+
+    # Remove known duplicate: ELT571.1 (keep only one entry with the same code and time)
+    seen = set()
+    deduped_schedule = []
+    for s in schedule:
+        key = (s['course_code'], s['time'])
+        if key == ("ELT571.1", s['time']):
+            if key in seen:
+                continue
+        if key not in seen:
+            deduped_schedule.append(s)
+            seen.add(key)
+    schedule = deduped_schedule
 
     # Helper: get enrollment for a sectioned course code
     def get_enrollment(code):
