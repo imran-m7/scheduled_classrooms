@@ -3,6 +3,7 @@ from collections import defaultdict
 from docx import Document
 import pulp
 import os
+import openpyxl
 
 # File paths
 COURSES_CSV = 'AcilanDersler.csv'
@@ -135,16 +136,18 @@ def main():
     # Output results
     print('Status:', pulp.LpStatus[prob.status])
     assigned_courses = 0
+    total_unused_seat_hours = 0
     for c in courses:
         assigned = False
         for r in rooms:
             if pulp.value(x[c, r]) == 1:
-                print(f'Course {c} assigned to room {r} at time {course_time[c]} (enrollment: {get_enrollment(c)}, capacity: {capacities[r]})')
+                total_unused_seat_hours += capacities[r] - get_enrollment(c)
                 assigned = True
         if assigned:
             assigned_courses += 1
 
     print(f"\nTotal assigned courses: {assigned_courses} out of {len(courses)}")
+    print(f"Total unused seat-hours: {total_unused_seat_hours}")
 
     # List all unassigned courses
     print('\n--- Unassigned Courses (not assigned to any room) ---')
@@ -158,6 +161,33 @@ def main():
     for c in courses:
         if all(get_enrollment(c) > capacities[r] for r in rooms):
             print(f'Course {c} (enrollment: {get_enrollment(c)})')
+
+    # Output results to Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Assignments'
+    ws.append(['Course Code', 'Assigned Room', 'Time', 'Enrollment', 'Room Capacity', 'Assignment Status'])
+
+    assigned_courses = 0
+    for c in courses:
+        assigned_room = None
+        for r in rooms:
+            if pulp.value(x[c, r]) == 1:
+                assigned_room = r
+                break
+        enrollment = get_enrollment(c)
+        time = course_time[c]
+        if assigned_room:
+            ws.append([c, assigned_room, time, enrollment, capacities[assigned_room], 'Assigned'])
+            assigned_courses += 1
+        else:
+            # Check if infeasible (no room large enough)
+            infeasible = all(enrollment > capacities[r] for r in rooms)
+            status = 'Infeasible' if infeasible else 'Unassigned'
+            ws.append([c, '', time, enrollment, '', status])
+
+    wb.save('course_assignments.xlsx')
+    print(f"\nResults saved to course_assignments.xlsx. Total assigned courses: {assigned_courses} out of {len(courses)}")
 
 if __name__ == '__main__':
     main()
