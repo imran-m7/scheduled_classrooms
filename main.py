@@ -92,6 +92,63 @@ def main():
     # Load data
     enrollments_raw = load_course_enrollments(COURSES_CSV)
     capacities = load_room_capacities(ROOMS_CSV)
+
+    # Special case: merge all ENS207-3.* and ENS207-6.* into ENS207
+    print("DEBUG: ENS207-3.* and ENS207-6.* enrollments before merge:")
+    for k in enrollments_raw:
+        if k.startswith('ENS207-3.') or k.startswith('ENS207-6.'):
+            print(f"{k}: {enrollments_raw[k]}")
+    ens207_total = 0
+    ens207_times = set()
+    ens207_rooms = set()
+    to_delete = []
+    # Only sum the first nonzero ENS207-3.* and ENS207-6.*
+    ens207_3_found = False
+    ens207_6_found = False
+    for k in sorted(enrollments_raw.keys()):
+        if k.startswith('ENS207-3.') and not ens207_3_found and enrollments_raw[k] > 0:
+            ens207_total += enrollments_raw[k]
+            ens207_3_found = True
+            to_delete.append(k)
+        elif k.startswith('ENS207-6.') and not ens207_6_found and enrollments_raw[k] > 0:
+            ens207_total += enrollments_raw[k]
+            ens207_6_found = True
+            to_delete.append(k)
+        elif k.startswith('ENS207-3.') or k.startswith('ENS207-6.'):
+            to_delete.append(k)
+    for k in to_delete:
+        if k in enrollments_raw:
+            del enrollments_raw[k]
+    if ens207_total > 0:
+        enrollments_raw['ENS207'] = ens207_total
+    print(f"DEBUG: ENS207 merged total enrollment: {ens207_total}")
+
+    # Special case: merge ENS209-3 and ENS209-6 into ENS209, and map ENS209-3/6.* in schedule to ENS209
+    print("DEBUG: ENS209-3 and ENS209-6 enrollments before merge:")
+    ens209_total = 0
+    ens209_3_found = False
+    ens209_6_found = False
+    to_delete_209 = []
+    for k in sorted(enrollments_raw.keys()):
+        if k.startswith('ENS209-3') and not ens209_3_found and enrollments_raw[k] > 0:
+            print(f"{k}: {enrollments_raw[k]}")
+            ens209_total += enrollments_raw[k]
+            ens209_3_found = True
+            to_delete_209.append(k)
+        elif k.startswith('ENS209-6') and not ens209_6_found and enrollments_raw[k] > 0:
+            print(f"{k}: {enrollments_raw[k]}")
+            ens209_total += enrollments_raw[k]
+            ens209_6_found = True
+            to_delete_209.append(k)
+        elif k.startswith('ENS209-3') or k.startswith('ENS209-6'):
+            to_delete_209.append(k)
+    for k in to_delete_209:
+        if k in enrollments_raw:
+            del enrollments_raw[k]
+    if ens209_total > 0:
+        enrollments_raw['ENS209'] = ens209_total
+    print(f"DEBUG: ENS209 merged total enrollment: {ens209_total}")
+
     schedule_main = load_course_schedule(SCHEDULE_DOCX)
     schedule_grad = load_course_schedule(GRADUATE_DOCX)
     schedule = schedule_main + schedule_grad
@@ -108,6 +165,25 @@ def main():
             deduped_schedule.append(s)
             seen.add(key)
     schedule = deduped_schedule
+
+    # Update schedule: replace all ENS207-3.* and ENS207-6.* with ENS207, collect all times/rooms
+    new_schedule = []
+    for s in schedule:
+        # Map ENS209-3/6.* to ENS209
+        if s['course_code'].startswith('ENS209-3/6.'):
+            s['course_code'] = 'ENS209'
+        if s['course_code'].startswith('ENS207-3.') or s['course_code'].startswith('ENS207-6.'):
+            ens207_times.add(s['time'])
+            ens207_rooms.add(s['room'])
+            continue  # skip these
+        if s['course_code'].startswith('ENS209-3.') or s['course_code'].startswith('ENS209-6.'):
+            continue  # skip these (should not appear, but for safety)
+        new_schedule.append(s)
+    # Add ENS207 for each unique time/room pair
+    for t in ens207_times:
+        for r in ens207_rooms:
+            new_schedule.append({'course_code': 'ENS207', 'time': t, 'room': r})
+    schedule = new_schedule
 
     # Helper: get enrollment for a sectioned course code
     def get_enrollment(code):
@@ -179,6 +255,10 @@ def main():
             print(f'Course {c} (enrollment: {get_enrollment(c)})')
 
     # Output results to Excel
+    print('\n--- All course codes in schedule before Excel output ---')
+    for s in schedule:
+        print(s['course_code'])
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = 'Assignments'
