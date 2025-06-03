@@ -443,7 +443,7 @@ def main():
         all_times = set(t for c in courses for t in course_times[c])
         for t in all_times:
             prob += pulp.lpSum([
-                x[c, r, t] for c in courses if t in course_times[c] and capacities[r] >= get_enrollment(c)
+                x[c, r, t] for c in courses if t in course_times[c]
             ]) <= 1
 
     # --- Add fixed assignments for preassigned special lab courses ---
@@ -783,6 +783,26 @@ def main():
                     prob += x[c2, cs509_room, t] == 0
     # --- End fixed assignment for CS509.1 ---
 
+    # --- Add fixed assignment for VA502.1, VA517.1, VA519.1 to B F1.24 (MAC Studio) ---
+    mac_grad_courses = ['VA502.1', 'VA517.1', 'VA519.1']
+    mac_room = 'B F1.24 (MAC Studio)'
+    for course in mac_grad_courses:
+        for t in course_times.get(course, []):
+            # Force assignment to MAC Studio regardless of capacity
+            for r in rooms:
+                if r == mac_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, mac_room, t) in x:
+                        prob += x[c2, mac_room, t] == 0
+    # --- End fixed assignment for VA502.1, VA517.1, VA519.1 ---
+
     # Solve
     prob.solve()
 
@@ -860,6 +880,7 @@ def main():
     force_multimedia_courses = set(['VA312.1', 'VA312.2'])
     fba_courses_set = set(['IBF407.1', 'MAN328.1', 'MAN406.1'])
     fba_room = 'B F1.1 FBA Graduate Seminar Room'
+    mac_grad_courses_set = set(['VA502.1', 'VA517.1', 'VA519.1'])
     for c in courses:
         enrollment = get_enrollment(c)
         # If course is a two-day course, use the provided times
@@ -901,6 +922,14 @@ def main():
                 assigned_to_cs509_room = (assigned_room1 == cs509_room) or (assigned_room2 == cs509_room)
                 if assigned_to_cs509_room:
                     status = 'Assigned (Class/Laboratory)'
+                else:
+                    infeasible = all(enrollment > capacities[r] for r in rooms)
+                    status = 'Infeasible' if infeasible else 'Unassigned'
+            # --- Assignment status for MAC Studio graduate courses ---
+            elif c in mac_grad_courses_set:
+                assigned_to_mac = (assigned_room1 == mac_room) or (assigned_room2 == mac_room)
+                if assigned_to_mac:
+                    status = 'Assigned (MAC Studio)'
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
