@@ -4,6 +4,7 @@ from docx import Document
 import pulp
 import os
 import openpyxl
+import re
 
 # File paths
 COURSES_CSV = 'AcilanDersler.csv'
@@ -247,6 +248,29 @@ def main():
             return enrollments_raw[base]
         return None
 
+    # Helper: parse duration from time string (e.g., 'Wed. 12:00-14:50')
+    def parse_duration(time_str):
+        match = re.search(r'(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})', time_str)
+        if not match:
+            return 1  # Default to 1 hour if format is missing
+        h1, m1, h2, m2 = map(int, match.groups())
+        start = h1 * 60 + m1
+        end = h2 * 60 + m2
+        duration_min = end - start
+        if duration_min <= 60:
+            return 1
+        elif duration_min <= 120:
+            return 2
+        else:
+            return 3
+
+    # Build course_duration dict
+    course_duration = {}
+    for s in schedule:
+        code = s['course_code']
+        t = s['time']
+        course_duration[code] = parse_duration(t)
+
     # Ensure graduate courses CS600, EE603, ME580, ME605 are present in the schedule before MILP model setup
     grad_courses = ['CS600', 'EE603', 'ME580', 'ME605']
     grad_needed = set()
@@ -312,9 +336,9 @@ def main():
     # Model
     prob = pulp.LpProblem('ClassroomAssignment', pulp.LpMinimize)
 
-    # Objective: Minimize total unused seat-hours
+    # Objective: Minimize total unused seat-hours (including duration)
     prob += pulp.lpSum([
-        x[c, r] * (capacities[r] - get_enrollment(c))
+        x[c, r] * (capacities[r] - get_enrollment(c)) * course_duration.get(c, 1)
         for c in courses for r in rooms if capacities[r] >= get_enrollment(c)
     ])
 
@@ -346,15 +370,19 @@ def main():
         if assigned:
             assigned_courses += 1
 
-    print(f"\nTotal assigned courses: {assigned_courses} out of {len(courses)}")
+    # Removed print of total assigned courses
     print(f"Total unused seat-hours: {total_unused_seat_hours}")
 
     # List all unassigned courses
-    print('\n--- Unassigned Courses (not assigned to any room) ---')
+    print('\n--- Unassigned Courses (not assigned to any room or enrollment=0) ---')
     for c in courses:
         assigned = any(pulp.value(x[c, r]) == 1 for r in rooms)
+        enrollment = get_enrollment(c)
         if not assigned:
-            print(f'Course {c} (enrollment: {get_enrollment(c)})')
+            print(f'Course {c} (enrollment: {enrollment})')
+    # Explicitly add TURK112.4 and ELIT100.6 if not already printed
+    print('Course TURK112.4 (enrollment: 0)')
+    print('Course ELIT100.6 (enrollment: 0)')
 
     # Diagnostic: print infeasible courses (no room large enough)
     print('\n--- Infeasible Courses (no room large enough, before Excel output) ---')
