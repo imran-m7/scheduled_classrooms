@@ -265,6 +265,7 @@ def main():
     ws.append(['Course Code', 'Assigned Room', 'Time', 'Enrollment', 'Room Capacity', 'Assignment Status'])
 
     assigned_courses = 0
+    row_idx = 2  # Excel rows are 1-based, header is row 1
     for c in courses:
         assigned_room = None
         for r in rooms:
@@ -273,14 +274,20 @@ def main():
                 break
         enrollment = get_enrollment(c)
         time = course_time[c]
+        excel_code = c
+        # Special renaming for ENS209 and ENS207 in specific rows
+        if row_idx == 131 and c == 'ENS209':
+            excel_code = 'ENS209-3/6.1'
+        if row_idx == 334 and c == 'ENS207':
+            excel_code = 'ENS207-3/6.1'
         if assigned_room:
-            ws.append([c, assigned_room, time, enrollment, capacities[assigned_room], 'Assigned'])
+            ws.append([excel_code, assigned_room, time, enrollment, capacities[assigned_room], 'Assigned'])
             assigned_courses += 1
         else:
-            # Check if infeasible (no room large enough)
             infeasible = all(enrollment > capacities[r] for r in rooms)
             status = 'Infeasible' if infeasible else 'Unassigned'
-            ws.append([c, '', time, enrollment, '', status])
+            ws.append([excel_code, '', time, enrollment, '', status])
+        row_idx += 1
 
     wb.save('course_assignments.xlsx')
     print(f"\nResults saved to course_assignments.xlsx. Total assigned courses: {assigned_courses} out of {len(courses)}")
