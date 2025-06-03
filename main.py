@@ -149,6 +149,32 @@ def main():
         enrollments_raw['ENS209'] = ens209_total
     print(f"DEBUG: ENS209 merged total enrollment: {ens209_total}")
 
+    # Special case: merge ARCH216.1 and ARCH216-6.1 into ARCH216
+    print("DEBUG: ARCH216.1 and ARCH216-6.1 enrollments before merge:")
+    arch216_total = 0
+    arch216_1_found = False
+    arch216_6_found = False
+    to_delete_arch216 = []
+    for k in sorted(enrollments_raw.keys()):
+        if k == 'ARCH216.1' and not arch216_1_found and enrollments_raw[k] > 0:
+            print(f"{k}: {enrollments_raw[k]}")
+            arch216_total += enrollments_raw[k]
+            arch216_1_found = True
+            to_delete_arch216.append(k)
+        elif k == 'ARCH216-6.1' and not arch216_6_found and enrollments_raw[k] > 0:
+            print(f"{k}: {enrollments_raw[k]}")
+            arch216_total += enrollments_raw[k]
+            arch216_6_found = True
+            to_delete_arch216.append(k)
+        elif k == 'ARCH216.1' or k == 'ARCH216-6.1':
+            to_delete_arch216.append(k)
+    for k in to_delete_arch216:
+        if k in enrollments_raw:
+            del enrollments_raw[k]
+    if arch216_total > 0:
+        enrollments_raw['ARCH216'] = arch216_total
+    print(f"DEBUG: ARCH216 merged total enrollment: {arch216_total}")
+
     schedule_main = load_course_schedule(SCHEDULE_DOCX)
     schedule_grad = load_course_schedule(GRADUATE_DOCX)
     schedule = schedule_main + schedule_grad
@@ -169,6 +195,9 @@ def main():
     # Update schedule: replace all ENS207-3.* and ENS207-6.* with ENS207, collect all times/rooms
     new_schedule = []
     for s in schedule:
+        # Map ARCH216.1 and ARCH216-6.1 to ARCH216
+        if s['course_code'] in ('ARCH216.1', 'ARCH216-6.1'):
+            s['course_code'] = 'ARCH216'
         # Map ENS209-3/6.* to ENS209
         if s['course_code'].startswith('ENS209-3/6.'):
             s['course_code'] = 'ENS209'
@@ -183,7 +212,17 @@ def main():
     for t in ens207_times:
         for r in ens207_rooms:
             new_schedule.append({'course_code': 'ENS207', 'time': t, 'room': r})
-    schedule = new_schedule
+    # Deduplicate ARCH216 entries (same time/room)
+    seen_arch216 = set()
+    deduped_schedule = []
+    for s in new_schedule:
+        if s['course_code'] == 'ARCH216':
+            key = (s['course_code'], s['time'], s['room'])
+            if key in seen_arch216:
+                continue
+            seen_arch216.add(key)
+        deduped_schedule.append(s)
+    schedule = deduped_schedule
 
     # Helper: get enrollment for a sectioned course code
     def get_enrollment(code):
@@ -255,10 +294,6 @@ def main():
             print(f'Course {c} (enrollment: {get_enrollment(c)})')
 
     # Output results to Excel
-    print('\n--- All course codes in schedule before Excel output ---')
-    for s in schedule:
-        print(s['course_code'])
-
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = 'Assignments'
@@ -275,11 +310,13 @@ def main():
         enrollment = get_enrollment(c)
         time = course_time[c]
         excel_code = c
-        # Special renaming for ENS209 and ENS207 in specific rows
+        # Special renaming for ENS209, ENS207, and ARCH216 in specific rows
         if row_idx == 131 and c == 'ENS209':
             excel_code = 'ENS209-3/6.1'
         if row_idx == 334 and c == 'ENS207':
             excel_code = 'ENS207-3/6.1'
+        if c == 'ARCH216':
+            excel_code = 'ARCH216-3/6.1'
         if assigned_room:
             ws.append([excel_code, assigned_room, time, enrollment, capacities[assigned_room], 'Assigned'])
             assigned_courses += 1
