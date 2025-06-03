@@ -607,6 +607,27 @@ def main():
                     prob += pulp.lpSum([x[course, r, t] for r in rooms if r != mac_room and capacities[r] >= (enrollment or 0)]) == 1
     # --- End preferred assignment for MAC Studio courses ---
 
+    # --- Add preferred assignment for VACD Drawing Studio courses ---
+    drawing_room = 'A B.16 - VACD Drawing Studio'
+    drawing_courses = ['VA104.1', 'VA104.2', 'VA310.1']
+    drawing_courses_set = set(['VA104.1', 'VA104.2', 'VA310.1'])
+    for course in drawing_courses:
+        for t in course_times.get(course, []):
+            # Force assignment to Drawing Studio regardless of capacity
+            for r in rooms:
+                if r == drawing_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, drawing_room, t) in x:
+                        prob += x[c2, drawing_room, t] == 0
+    # --- End preferred assignment for VACD Drawing Studio courses ---
+
     # Solve
     prob.solve()
 
@@ -746,6 +767,18 @@ def main():
                 else:
                     if (assigned_room1 or assigned_room2):
                         status = 'Assigned (Not FBA Graduate Seminar Room due to capacity)'
+                    else:
+                        infeasible = all(enrollment > capacities[r] for r in rooms)
+                        status = 'Infeasible' if infeasible else 'Unassigned'
+            # Special status for Drawing Studio courses
+            elif c in drawing_courses_set:
+                drawing_room = 'A B.16 - VACD Drawing Studio'
+                assigned_to_drawing = (assigned_room1 == drawing_room) or (assigned_room2 == drawing_room)
+                if assigned_to_drawing:
+                    status = 'Assigned (VACD Drawing Studio)'
+                else:
+                    if (assigned_room1 or assigned_room2):
+                        status = 'Assigned (Not VACD Drawing Studio due to capacity)'
                     else:
                         infeasible = all(enrollment > capacities[r] for r in rooms)
                         status = 'Infeasible' if infeasible else 'Unassigned'
