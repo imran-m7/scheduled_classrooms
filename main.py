@@ -628,6 +628,28 @@ def main():
                         prob += x[c2, drawing_room, t] == 0
     # --- End preferred assignment for VACD Drawing Studio courses ---
 
+    # --- Add preferred assignment for B F1.10 Class/ART Studio courses ---
+    b_f1_10_room = 'B F1.10 Class/ART Studio'
+    b_f1_10_courses = ['VA217.1', 'VA217.2', 'VA217.3', 'VA334.1']
+    b_f1_10_courses_set = set(b_f1_10_courses)
+    for course in b_f1_10_courses:
+        for t in course_times.get(course, []):
+            enrollment = get_enrollment(course)
+            # Force assignment to B F1.10 Class/ART Studio regardless of capacity
+            for r in rooms:
+                if r == b_f1_10_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, b_f1_10_room, t) in x:
+                        prob += x[c2, b_f1_10_room, t] == 0
+    # --- End preferred assignment for B F1.10 Class/ART Studio courses ---
+
     # Solve
     prob.solve()
 
@@ -734,8 +756,7 @@ def main():
                         cap2 = capacities[r]
             # Special status for multimedia studio courses
             if c in multimedia_courses_set:
-                vacd_room = 'A B.1 - VACD Multimedia Studio'
-                assigned_to_vacd = (assigned_room1 == vacd_room) or (assigned_room2 == vacd_room)
+                assigned_to_vacd = (assigned_room1 == multimedia_room) or (assigned_room2 == multimedia_room)
                 if assigned_to_vacd:
                     status = 'Assigned (VACD Multimedia Studio)'
                 else:
@@ -749,7 +770,6 @@ def main():
                     status = 'Assigned (VACD Multimedia Studio)'
             # Special status for MAC Studio courses
             elif c in mac_courses_set:
-                mac_room = 'B F1.24 (MAC Studio)'
                 assigned_to_mac = (assigned_room1 == mac_room) or (assigned_room2 == mac_room)
                 if assigned_to_mac:
                     status = 'Assigned (MAC Studio)'
@@ -779,6 +799,18 @@ def main():
                 else:
                     if (assigned_room1 or assigned_room2):
                         status = 'Assigned (Not VACD Drawing Studio due to capacity)'
+                    else:
+                        infeasible = all(enrollment > capacities[r] for r in rooms)
+                        status = 'Infeasible' if infeasible else 'Unassigned'
+            # Special status for B F1.10 Class/ART Studio courses
+            elif c in b_f1_10_courses_set:
+                b_f1_10_room = 'B F1.10 Class/ART Studio'
+                assigned_to_b_f1_10 = (assigned_room1 == b_f1_10_room) or (assigned_room2 == b_f1_10_room)
+                if assigned_to_b_f1_10:
+                    status = 'Assigned (B F1.10 Class/ART Studio)'
+                else:
+                    if (assigned_room1 or assigned_room2):
+                        status = 'Assigned (Not B F1.10 Class/ART Studio due to capacity)'
                     else:
                         infeasible = all(enrollment > capacities[r] for r in rooms)
                         status = 'Infeasible' if infeasible else 'Unassigned'
