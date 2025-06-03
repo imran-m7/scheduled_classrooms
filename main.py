@@ -376,15 +376,27 @@ def main():
     for c in courses:
         if c == 'POLS304.1':
             pols3041_found = True
-            # Removed verbose print
-        # Removed verbose print for all other courses
         try:
+            enrollment = get_enrollment(c)
+            if enrollment == 0:
+                time = course_time.get(c, 'MISSING_TIME')
+                excel_code = c
+                # Special renaming for ENS209, ENS207, and ARCH216 in specific rows
+                if row_idx == 131 and c == 'ENS209':
+                    excel_code = 'ENS209-3/6.1'
+                if row_idx == 334 and c == 'ENS207':
+                    excel_code = 'ENS207-3/6.1'
+                if c == 'ARCH216':
+                    excel_code = 'ARCH216-3/6.1'
+                ws.append([excel_code, '', time, enrollment, '', 'Unassigned (enrollment=0)'])
+                row_idx += 1
+                excel_rows_written += 1
+                continue
             assigned_room = None
             for r in rooms:
                 if pulp.value(x[c, r]) == 1:
                     assigned_room = r
                     break
-            enrollment = get_enrollment(c)
             time = course_time.get(c, 'MISSING_TIME')
             excel_code = c
             # Special renaming for ENS209, ENS207, and ARCH216 in specific rows
