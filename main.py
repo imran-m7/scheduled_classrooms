@@ -453,5 +453,43 @@ def main():
     wb.save('course_assignments.xlsx')
     print(f"\nResults saved to course_assignments.xlsx. Total assigned courses: {assigned_courses} out of {len(courses)}")
 
+    # --- Post-processing: Verify constraints in Excel output ---
+    print('\n--- Verifying Excel output constraints ---')
+    from collections import defaultdict
+    excel_wb = openpyxl.load_workbook('course_assignments.xlsx')
+    excel_ws = excel_wb.active
+    room_time = defaultdict(list)  # (room, time) -> [course_code]
+    course_room = defaultdict(list)  # course_code -> [room]
+    time_mismatch = []
+    for row in excel_ws.iter_rows(min_row=2, values_only=True):
+        code, room, time, enrollment, cap, status = row
+        if status == 'Assigned' and room and time:
+            room_time[(room, time)].append(code)
+            course_room[code].append(room)
+            # Check if scheduled time matches assignment (should always match, but double-check)
+            if code in course_time and time != course_time[code]:
+                time_mismatch.append((code, time, course_time[code]))
+    # 1. No overlapping courses in the same room
+    overlap_found = False
+    for (room, time), codes in room_time.items():
+        if len(codes) > 1:
+            print(f'Overlap: Room {room} at {time} assigned to multiple courses: {codes}')
+            overlap_found = True
+    # 2. Each course assigned to exactly one classroom
+    multiroom_found = False
+    for code, rooms in course_room.items():
+        if len(rooms) > 1:
+            print(f'Course {code} assigned to multiple rooms: {rooms}')
+            multiroom_found = True
+    # 3. Each course assigned during its scheduled time
+    if time_mismatch:
+        for code, assigned_time, sched_time in time_mismatch:
+            print(f'Course {code} assigned at {assigned_time}, but scheduled at {sched_time}')
+    if not overlap_found and not multiroom_found and not time_mismatch:
+        print('All constraints satisfied in Excel output.')
+    print("\n- No overlapping courses in the same room")
+    print("- Each course must be assigned during its scheduled time")
+    print("- Each course is assigned exactly one classroom")
+
 if __name__ == '__main__':
     main()
