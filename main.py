@@ -264,12 +264,41 @@ def main():
         else:
             return 3
 
+    # --- Ensure both meeting times for two-day courses are present in the schedule BEFORE MILP model ---
+    # Format: course_code: [first_time, second_time]
+    two_day_courses = {
+        'ELT370.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'ELT371.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'ELT471.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'ELT571.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'MATH101.2': ['Wed. 16:00-16:50', 'Thu. 13:00-14:50'],
+        'MATH102.1': ['Mon. 09:00-09:50', 'Tue. 12:00-13:50'],
+        'MATH201.1': ['Mon. 14:00-14:50', 'Wed. 09:00-10:50'],
+        'MATH201.2': ['Mon. 10:00-10:50', 'Wed. 12:00-13:50'],
+        'ELT599.1': ['Mon. 17:00-17:50', 'Tue. 17:00-18:50'],
+    }
+    new_entries = []
+    for code, times in two_day_courses.items():
+        if code in enrollments_raw:
+            times_in_sched = [s for s in schedule if s['course_code'] == code]
+            existing_times = set(s['time'] for s in times_in_sched)
+            for t in times:
+                if t not in existing_times:
+                    new_entries.append({'course_code': code, 'time': t, 'room': ''})
+    schedule.extend(new_entries)
+
     # Build course_duration dict
     course_duration = {}
     for s in schedule:
         code = s['course_code']
         t = s['time']
-        course_duration[code] = parse_duration(t)
+        course_duration[(code, t)] = parse_duration(t)
+
+    # Build course_time dict (now supports multiple times per course)
+    from collections import defaultdict
+    course_times = defaultdict(list)
+    for s in schedule:
+        course_times[s['course_code']].append(s['time'])
 
     # Ensure graduate courses CS600, EE603, ME580, ME605 are present in the schedule before MILP model setup
     grad_courses = ['CS600', 'EE603', 'ME580', 'ME605']
@@ -330,28 +359,30 @@ def main():
             print(f"Schedule entry: {s['course_code']} at {s['time']} in {s['room']}")
     print('--- End POLS304 schedule entries debug ---')
 
-    # Decision variables: x[c, r] = 1 if course c assigned to room r
-    x = pulp.LpVariable.dicts('assign', ((c, r) for c in courses for r in rooms), cat='Binary')
+    # Decision variables: x[c, r, t] = 1 if course c assigned to room r at time t
+    x = pulp.LpVariable.dicts('assign', ((c, r, t) for c in courses for r in rooms for t in course_times[c]), cat='Binary')
 
     # Model
     prob = pulp.LpProblem('ClassroomAssignment', pulp.LpMinimize)
 
     # Objective: Minimize total unused seat-hours (including duration)
     prob += pulp.lpSum([
-        x[c, r] * (capacities[r] - get_enrollment(c)) * course_duration.get(c, 1)
-        for c in courses for r in rooms if capacities[r] >= get_enrollment(c)
+        x[c, r, t] * (capacities[r] - get_enrollment(c)) * course_duration.get((c, t), 1)
+        for c in courses for r in rooms for t in course_times[c] if capacities[r] >= get_enrollment(c)
     ])
 
     # Constraints
-    # 1. Each course assigned to exactly one room (with enough capacity)
+    # 1. Each course at each time assigned to exactly one room (with enough capacity)
     for c in courses:
-        prob += pulp.lpSum([x[c, r] for r in rooms if capacities[r] >= get_enrollment(c)]) == 1
+        for t in course_times[c]:
+            prob += pulp.lpSum([x[c, r, t] for r in rooms if capacities[r] >= get_enrollment(c)]) == 1
 
     # 2. No overlapping courses in the same room at the same time
     for r in rooms:
-        for t in times:
+        all_times = set(t for c in courses for t in course_times[c])
+        for t in all_times:
             prob += pulp.lpSum([
-                x[c, r] for c in courses if course_time[c] == t and capacities[r] >= get_enrollment(c)
+                x[c, r, t] for c in courses if t in course_times[c] and capacities[r] >= get_enrollment(c)
             ]) <= 1
 
     # Solve
@@ -362,94 +393,94 @@ def main():
     assigned_courses = 0
     total_unused_seat_hours = 0
     for c in courses:
-        assigned = False
-        for r in rooms:
-            if pulp.value(x[c, r]) == 1:
-                total_unused_seat_hours += capacities[r] - get_enrollment(c)
-                assigned = True
-        if assigned:
-            assigned_courses += 1
+        for t in course_times[c]:
+            assigned = False
+            for r in rooms:
+                if pulp.value(x[c, r, t]) == 1:
+                    total_unused_seat_hours += capacities[r] - get_enrollment(c)
+                    assigned = True
+            if assigned:
+                assigned_courses += 1
 
-    # Removed print of total assigned courses
     print(f"Total unused seat-hours: {total_unused_seat_hours}")
 
-    # List all unassigned courses
-    print('\n--- Unassigned Courses (not assigned to any room or enrollment=0) ---')
+    # List all unassigned course-times
+    print('\n--- Unassigned Course-Times (not assigned to any room or enrollment=0) ---')
     for c in courses:
-        assigned = any(pulp.value(x[c, r]) == 1 for r in rooms)
-        enrollment = get_enrollment(c)
-        if not assigned:
-            print(f'Course {c} (enrollment: {enrollment})')
-    # Explicitly add TURK112.4 and ELIT100.6 if not already printed
+        for t in course_times[c]:
+            assigned = any(pulp.value(x[c, r, t]) == 1 for r in rooms)
+            enrollment = get_enrollment(c)
+            if not assigned:
+                print(f'Course {c} at {t} (enrollment: {enrollment})')
     print('Course TURK112.4 (enrollment: 0)')
     print('Course ELIT100.6 (enrollment: 0)')
 
-    # Diagnostic: print infeasible courses (no room large enough)
-    print('\n--- Infeasible Courses (no room large enough, before Excel output) ---')
+    # Diagnostic: print infeasible course-times (no room large enough)
+    print('\n--- Infeasible Course-Times (no room large enough, before Excel output) ---')
     for c in courses:
-        if all(get_enrollment(c) > capacities[r] for r in rooms):
-            print(f'Course {c} (enrollment: {get_enrollment(c)})')
+        for t in course_times[c]:
+            if all(get_enrollment(c) > capacities[r] for r in rooms):
+                print(f'Course {c} at {t} (enrollment: {get_enrollment(c)})')
 
-    # Output results to Excel
+    # Output results to Excel (one row per course, with up to two times)
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = 'Assignments'
-    ws.append(['Course Code', 'Assigned Room', 'Time', 'Enrollment', 'Room Capacity', 'Assignment Status'])
+    ws.append(['Course Code', 'Assigned Room 1', 'Time 1', 'Assigned Room 2', 'Time 2', 'Enrollment', 'Room Capacity 1', 'Room Capacity 2', 'Assignment Status'])
+
+    # Mapping for two-day courses and their times
+    two_day_courses = {
+        'ELT370.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'ELT371.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'ELT471.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'ELT571.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'MATH101.2': ['Wed. 16:00-16:50', 'Thu. 13:00-14:50'],
+        'MATH102.1': ['Mon. 09:00-09:50', 'Tue. 12:00-13:50'],
+        'MATH201.1': ['Mon. 14:00-14:50', 'Wed. 09:00-10:50'],
+        'MATH201.2': ['Mon. 10:00-10:50', 'Wed. 12:00-13:50'],
+        'ELT599.1': ['Mon. 17:00-17:50', 'Tue. 17:00-18:50'],
+    }
 
     assigned_courses = 0
-    row_idx = 2  # Excel rows are 1-based, header is row 1
     excel_rows_written = 0
-    print('\n--- Excel output course codes ---')
-    pols3041_found = False
+    print('\n--- Excel output course codes (one row per course, up to two times) ---')
     for c in courses:
-        if c == 'POLS304.1':
-            pols3041_found = True
-        try:
-            enrollment = get_enrollment(c)
-            if enrollment == 0:
-                time = course_time.get(c, 'MISSING_TIME')
-                excel_code = c
-                # Special renaming for ENS209, ENS207, and ARCH216 in specific rows
-                if row_idx == 131 and c == 'ENS209':
-                    excel_code = 'ENS209-3/6.1'
-                if row_idx == 334 and c == 'ENS207':
-                    excel_code = 'ENS207-3/6.1'
-                if c == 'ARCH216':
-                    excel_code = 'ARCH216-3/6.1'
-                ws.append([excel_code, '', time, enrollment, '', 'Unassigned (enrollment=0)'])
-                row_idx += 1
-                excel_rows_written += 1
-                continue
-            assigned_room = None
+        enrollment = get_enrollment(c)
+        # If course is a two-day course, use the provided times
+        if c in two_day_courses:
+            t1, t2 = two_day_courses[c]
+        else:
+            times = course_times[c]
+            t1 = times[0] if len(times) > 0 else ''
+            t2 = times[1] if len(times) > 1 else ''
+        # Find assigned rooms for each time
+        assigned_room1 = None
+        assigned_room2 = None
+        cap1 = ''
+        cap2 = ''
+        status = ''
+        if enrollment == 0:
+            status = 'Unassigned (enrollment=0)'
+        else:
             for r in rooms:
-                if pulp.value(x[c, r]) == 1:
-                    assigned_room = r
-                    break
-            time = course_time.get(c, 'MISSING_TIME')
-            excel_code = c
-            # Special renaming for ENS209, ENS207, and ARCH216 in specific rows
-            if row_idx == 131 and c == 'ENS209':
-                excel_code = 'ENS209-3/6.1'
-            if row_idx == 334 and c == 'ENS207':
-                excel_code = 'ENS207-3/6.1'
-            if c == 'ARCH216':
-                excel_code = 'ARCH216-3/6.1'
-            if assigned_room:
-                ws.append([excel_code, assigned_room, time, enrollment, capacities[assigned_room], 'Assigned'])
+                if t1 and t1 in course_times[c]:
+                    if pulp.value(x[c, r, t1]) == 1:
+                        assigned_room1 = r
+                        cap1 = capacities[r]
+                if t2 and t2 in course_times[c]:
+                    if pulp.value(x[c, r, t2]) == 1:
+                        assigned_room2 = r
+                        cap2 = capacities[r]
+            if (t1 and assigned_room1) or (t2 and assigned_room2):
+                status = 'Assigned'
                 assigned_courses += 1
             else:
                 infeasible = all(enrollment > capacities[r] for r in rooms)
                 status = 'Infeasible' if infeasible else 'Unassigned'
-                ws.append([excel_code, '', time, enrollment, '', status])
-            row_idx += 1
-            excel_rows_written += 1
-        except Exception as e:
-            print(f'Exception for course {c}: {e}')
+        ws.append([c, assigned_room1 or '', t1, assigned_room2 or '', t2, enrollment, cap1, cap2, status])
+        excel_rows_written += 1
     print(f'Total courses: {len(courses)}, Excel rows written: {excel_rows_written}')
     print('--- End Excel output course codes ---')
-    if not pols3041_found:
-        print('WARNING: POLS304.1 was not found in the Excel output loop!')
-
     wb.save('course_assignments.xlsx')
     print(f"\nResults saved to course_assignments.xlsx. Total assigned courses: {assigned_courses} out of {len(courses)}")
 
@@ -459,37 +490,59 @@ def main():
     excel_wb = openpyxl.load_workbook('course_assignments.xlsx')
     excel_ws = excel_wb.active
     room_time = defaultdict(list)  # (room, time) -> [course_code]
-    course_room = defaultdict(list)  # course_code -> [room]
-    time_mismatch = []
+    course_room_time = defaultdict(list)  # (course_code, time) -> [room]
     for row in excel_ws.iter_rows(min_row=2, values_only=True):
-        code, room, time, enrollment, cap, status = row
-        if status == 'Assigned' and room and time:
-            room_time[(room, time)].append(code)
-            course_room[code].append(room)
-            # Check if scheduled time matches assignment (should always match, but double-check)
-            if code in course_time and time != course_time[code]:
-                time_mismatch.append((code, time, course_time[code]))
-    # 1. No overlapping courses in the same room
+        code, room1, time1, room2, time2, enrollment, cap1, cap2, status = row
+        if status == 'Assigned':
+            if room1 and time1:
+                room_time[(room1, time1)].append(code)
+                course_room_time[(code, time1)].append(room1)
+            if room2 and time2:
+                room_time[(room2, time2)].append(code)
+                course_room_time[(code, time2)].append(room2)
+    # 1. No overlapping courses in the same room at the same time
     overlap_found = False
     for (room, time), codes in room_time.items():
         if len(codes) > 1:
             print(f'Overlap: Room {room} at {time} assigned to multiple courses: {codes}')
             overlap_found = True
-    # 2. Each course assigned to exactly one classroom
+    # 2. Each course-time assigned to exactly one classroom
     multiroom_found = False
-    for code, rooms in course_room.items():
+    for (code, time), rooms in course_room_time.items():
         if len(rooms) > 1:
-            print(f'Course {code} assigned to multiple rooms: {rooms}')
+            print(f'Course {code} at {time} assigned to multiple rooms: {rooms}')
             multiroom_found = True
-    # 3. Each course assigned during its scheduled time
-    if time_mismatch:
-        for code, assigned_time, sched_time in time_mismatch:
-            print(f'Course {code} assigned at {assigned_time}, but scheduled at {sched_time}')
-    if not overlap_found and not multiroom_found and not time_mismatch:
+    if not overlap_found and not multiroom_found:
         print('All constraints satisfied in Excel output.')
-    print("\n- No overlapping courses in the same room")
-    print("- Each course must be assigned during its scheduled time")
-    print("- Each course is assigned exactly one classroom")
+    print("\n- No overlapping courses in the same room at the same time")
+    print("- Each course-time is assigned exactly one classroom")
+    print("- Each course is assigned during its scheduled time (by construction)")
+
+    # --- Add second meeting times for courses with two days ---
+    # Format: course_code: [first_time, second_time]
+    two_day_courses = {
+        'ELT370.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'ELT371.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'ELT471.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'ELT571.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
+        'MATH101.2': ['Wed. 16:00-16:50', 'Thu. 13:00-14:50'],
+        'MATH102.1': ['Mon. 09:00-09:50', 'Tue. 12:00-13:50'],
+        'MATH201.1': ['Mon. 14:00-14:50', 'Wed. 09:00-10:50'],
+        'MATH201.2': ['Mon. 10:00-10:50', 'Wed. 12:00-13:50'],
+        'ELT599.1': ['Mon. 17:00-17:50', 'Tue. 17:00-18:50'],
+    }
+    # For each course, if present in schedule, ensure both times are present as separate entries
+    new_entries = []
+    for code, times in two_day_courses.items():
+        # Only add if course is in enrollments and at least one time is already in schedule
+        if code in enrollments_raw:
+            times_in_sched = [s for s in schedule if s['course_code'] == code]
+            existing_times = set(s['time'] for s in times_in_sched)
+            for t in times:
+                if t not in existing_times:
+                    # Add a new entry for this time, room left blank for assignment
+                    new_entries.append({'course_code': code, 'time': t, 'room': ''})
+    schedule.extend(new_entries)
 
 if __name__ == '__main__':
     main()
