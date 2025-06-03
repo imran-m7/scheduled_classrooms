@@ -1,10 +1,10 @@
 import csv
-from collections import defaultdict
 from docx import Document
 import pulp
 import os
 import openpyxl
 import re
+from collections import defaultdict
 
 # File paths
 COURSES_CSV = 'AcilanDersler.csv'
@@ -264,6 +264,48 @@ def main():
         else:
             return 3
 
+    # --- Special Classroom Pre-Assignment Logic ---
+    # Identify all computer lab rooms
+    computer_lab_keywords = ['Computer Lab', 'Computer Laboratory', 'Class/Laboratory']
+    computer_lab_rooms = [room for room in capacities if any(kw in room for kw in computer_lab_keywords)]
+
+    # Courses that must be assigned to computer labs
+    special_lab_courses = [
+        'AID304.1', 'CS413.1', 'CS427.1', 'EE321.1', 'ENS207', 'IE425.1',
+        'ME206.1', 'VA306.1', 'VA306.2', 'VA314.1', 'VA341.1'
+    ]
+
+    # Build a set of (course, time) pairs to pre-assign
+    preassigned = []  # list of dicts: {course_code, time, room}
+    used_lab_times = set()  # (room, time) pairs already taken
+    for s in schedule:
+        if s['course_code'] in special_lab_courses:
+            # Assign to first available computer lab room at that time
+            assigned = False
+            for lab_room in computer_lab_rooms:
+                if (lab_room, s['time']) not in used_lab_times and capacities[lab_room] >= get_enrollment(s['course_code']):
+                    preassigned.append({'course_code': s['course_code'], 'time': s['time'], 'room': lab_room})
+                    used_lab_times.add((lab_room, s['time']))
+                    assigned = True
+                    break
+            if not assigned:
+                # If no lab available, leave room blank (will be unassigned in output)
+                preassigned.append({'course_code': s['course_code'], 'time': s['time'], 'room': ''})
+
+    # Remove preassigned (course, time) from schedule for MILP assignment
+    assigned_pairs = set((p['course_code'], p['time']) for p in preassigned if p['room'])
+    schedule_for_milp = [s for s in schedule if (s['course_code'], s['time']) not in assigned_pairs]
+
+    # Rebuild course_times, courses, etc. for MILP
+    course_times = defaultdict(list)
+    for s in schedule_for_milp:
+        course_times[s['course_code']].append(s['time'])
+    courses = list(set(s['course_code'] for s in schedule_for_milp if get_enrollment(s['course_code']) is not None))
+    rooms = list(capacities.keys())
+    times = list(set(s['time'] for s in schedule_for_milp))
+
+    # --- End Special Classroom Pre-Assignment Logic ---
+
     # Ensure graduate courses CS600, EE603, ME580, ME605 are present in the schedule BEFORE two-day course logic and MILP model setup
     grad_courses = ['CS600', 'EE603', 'ME580', 'ME605']
     grad_needed = set()
@@ -315,7 +357,6 @@ def main():
         course_duration[(code, t)] = parse_duration(t)
 
     # Build course_time dict (now supports multiple times per course)
-    from collections import defaultdict
     course_times = defaultdict(list)
     for s in schedule:
         course_times[s['course_code']].append(s['time'])
@@ -405,6 +446,23 @@ def main():
                 x[c, r, t] for c in courses if t in course_times[c] and capacities[r] >= get_enrollment(c)
             ]) <= 1
 
+    # --- Add fixed assignments for preassigned special lab courses ---
+    for p in preassigned:
+        if p['room']:
+            # Fix variable to 1 for preassigned, and 0 for all other rooms at that time
+            if p['course_code'] in x and p['room'] in rooms and p['time'] in course_times.get(p['course_code'], []):
+                prob += x[p['course_code'], p['room'], p['time']] == 1
+                for r in rooms:
+                    if r != p['room']:
+                        if (p['course_code'], r, p['time']) in x:
+                            prob += x[p['course_code'], r, p['time']] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != p['course_code'] and p['time'] in course_times.get(c2, []):
+                    if (c2, p['room'], p['time']) in x:
+                        prob += x[c2, p['room'], p['time']] == 0
+    # --- End fixed assignments ---
+
     # Solve
     prob.solve()
 
@@ -447,6 +505,20 @@ def main():
     ws = wb.active
     ws.title = 'Assignments'
     ws.append(['Course Code', 'Assigned Room 1', 'Time 1', 'Assigned Room 2', 'Time 2', 'Enrollment', 'Room Capacity 1', 'Room Capacity 2', 'Assignment Status'])
+
+    # --- Output preassigned special lab courses in Excel ---
+    for p in preassigned:
+        # Skip ENS207 if unassigned (no lab available)
+        if p['course_code'] == 'ENS207' and not p['room']:
+            continue
+        if p['room']:
+            enrollment = get_enrollment(p['course_code'])
+            cap = capacities.get(p['room'], '')
+            ws.append([p['course_code'], p['room'], p['time'], '', '', enrollment, cap, '', 'Assigned (Special Lab)'])
+        else:
+            enrollment = get_enrollment(p['course_code'])
+            ws.append([p['course_code'], '', p['time'], '', '', enrollment, '', '', 'Unassigned (No Lab Available)'])
+    # --- End output for preassigned ---
 
     # Mapping for two-day courses and their times
     two_day_courses = {
@@ -497,6 +569,9 @@ def main():
             else:
                 infeasible = all(enrollment > capacities[r] for r in rooms)
                 status = 'Infeasible' if infeasible else 'Unassigned'
+        # Skip unassigned or infeasible ENS207 rows
+        if c == 'ENS207' and status != 'Assigned':
+            continue
         ws.append([c, assigned_room1 or '', t1, assigned_room2 or '', t2, enrollment, cap1, cap2, status])
         excel_rows_written += 1
     print(f'Total courses: {len(courses)}, Excel rows written: {excel_rows_written}')
@@ -506,7 +581,6 @@ def main():
 
     # --- Post-processing: Verify constraints in Excel output ---
     print('\n--- Verifying Excel output constraints ---')
-    from collections import defaultdict
     excel_wb = openpyxl.load_workbook('course_assignments.xlsx')
     excel_ws = excel_wb.active
     room_time = defaultdict(list)  # (room, time) -> [course_code]
