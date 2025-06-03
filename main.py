@@ -482,10 +482,25 @@ def main():
     # --- Add preferred assignment for Multimedia Studio courses ---
     multimedia_room = 'A B.1 - VACD Multimedia Studio'
     multimedia_courses = ['ELIT103.1', 'ELIT103.2', 'VA312.1', 'VA312.2', 'VA451.1']
+    force_multimedia_courses = ['VA312.1', 'VA312.2']
     for course in multimedia_courses:
         for t in course_times.get(course, []):
             enrollment = get_enrollment(course)
-            if enrollment is not None and multimedia_room in capacities:
+            if course in force_multimedia_courses:
+                # Force assignment to multimedia studio regardless of capacity
+                for r in rooms:
+                    if r == multimedia_room:
+                        if (course, r, t) in x:
+                            prob += x[course, r, t] == 1
+                    else:
+                        if (course, r, t) in x:
+                            prob += x[course, r, t] == 0
+                # Block this room at this time for all other courses
+                for c2 in courses:
+                    if c2 != course and t in course_times.get(c2, []):
+                        if (c2, multimedia_room, t) in x:
+                            prob += x[c2, multimedia_room, t] == 0
+            elif enrollment is not None and multimedia_room in capacities:
                 if capacities[multimedia_room] >= enrollment:
                     # Force assignment to multimedia studio and block all other rooms
                     for r in rooms:
@@ -615,6 +630,7 @@ def main():
     excel_rows_written = 0
     print('\n--- Excel output course codes (one row per course, up to two times) ---')
     multimedia_courses_set = set(['ELIT103.1', 'ELIT103.2', 'VA312.1', 'VA312.2', 'VA451.1'])
+    force_multimedia_courses = set(['VA312.1', 'VA312.2'])
     fba_courses_set = set(['IBF407.1', 'MAN328.1', 'MAN406.1'])
     fba_room = 'B F1.1 FBA Graduate Seminar Room'
     for c in courses:
@@ -656,6 +672,9 @@ def main():
                     else:
                         infeasible = all(enrollment > capacities[r] for r in rooms)
                         status = 'Infeasible' if infeasible else 'Unassigned'
+                # For VA312.1 and VA312.2, always use the same status as the other three
+                if c in force_multimedia_courses:
+                    status = 'Assigned (VACD Multimedia Studio)'
             # Special status for FBA Graduate Seminar Room courses
             elif c in fba_courses_set:
                 assigned_to_fba = (assigned_room1 == fba_room) or (assigned_room2 == fba_room)
@@ -670,13 +689,14 @@ def main():
             else:
                 if (t1 and assigned_room1) or (t2 and assigned_room2):
                     status = 'Assigned'
-                    assigned_courses += 1
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
         # Skip unassigned or infeasible ENS207 rows
         if c == 'ENS207' and status != 'Assigned':
             continue
+        if status.startswith('Assigned'):
+            assigned_courses += 1
         ws.append([c, assigned_room1 or '', t1, assigned_room2 or '', t2, enrollment, cap1, cap2, status])
         excel_rows_written += 1
     print(f'Total courses: {len(courses)}, Excel rows written: {excel_rows_written}')
