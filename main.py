@@ -556,6 +556,57 @@ def main():
                     prob += pulp.lpSum([x[course, r, t] for r in rooms if r != fba_room and capacities[r] >= enrollment]) == 1
     # --- End preferred assignment for FBA Graduate Seminar Room courses ---
 
+    # --- Add preferred assignment for MAC Studio courses ---
+    mac_room = 'B F1.24 (MAC Studio)'
+    mac_courses = [
+        'VA211.1', 'VA211.2', 'VA304.1', 'VA315.1', 'VA323.1', 'VA323.2',
+        'VA406.1', 'VA416.1', 'VA443.1', 'VA452.1', 'VA455.1'
+    ]
+    mac_courses_set = set(mac_courses)
+    force_mac_courses = set(['VA406.1'])
+    for course in mac_courses:
+        for t in course_times.get(course, []):
+            enrollment = get_enrollment(course)
+            # Only assign if room exists
+            if mac_room in capacities:
+                if course in force_mac_courses:
+                    # Force assignment to MAC Studio regardless of capacity
+                    for r in rooms:
+                        if r == mac_room:
+                            if (course, r, t) in x:
+                                prob += x[course, r, t] == 1
+                        else:
+                            if (course, r, t) in x:
+                                prob += x[course, r, t] == 0
+                    # Block this room at this time for all other courses
+                    for c2 in courses:
+                        if c2 != course and t in course_times.get(c2, []):
+                            if (c2, mac_room, t) in x:
+                                prob += x[c2, mac_room, t] == 0
+                elif capacities[mac_room] >= (enrollment or 0):
+                    # Force assignment to MAC Studio and block all other rooms
+                    for r in rooms:
+                        if r == mac_room:
+                            if (course, r, t) in x:
+                                prob += x[course, r, t] == 1
+                        else:
+                            if (course, r, t) in x:
+                                prob += x[course, r, t] == 0
+                    # Block this room at this time for all other courses
+                    for c2 in courses:
+                        if c2 != course and t in course_times.get(c2, []):
+                            if (c2, mac_room, t) in x:
+                                prob += x[c2, mac_room, t] == 0
+                else:
+                    # Do not allow assignment to MAC Studio, must assign to another room
+                    for r in rooms:
+                        if r == mac_room:
+                            if (course, r, t) in x:
+                                prob += x[course, r, t] == 0
+                    # Ensure assignment to some other room with enough capacity
+                    prob += pulp.lpSum([x[course, r, t] for r in rooms if r != mac_room and capacities[r] >= (enrollment or 0)]) == 1
+    # --- End preferred assignment for MAC Studio courses ---
+
     # Solve
     prob.solve()
 
@@ -675,6 +726,18 @@ def main():
                 # For VA312.1 and VA312.2, always use the same status as the other three
                 if c in force_multimedia_courses:
                     status = 'Assigned (VACD Multimedia Studio)'
+            # Special status for MAC Studio courses
+            elif c in mac_courses_set:
+                mac_room = 'B F1.24 (MAC Studio)'
+                assigned_to_mac = (assigned_room1 == mac_room) or (assigned_room2 == mac_room)
+                if assigned_to_mac:
+                    status = 'Assigned (MAC Studio)'
+                else:
+                    if (assigned_room1 or assigned_room2):
+                        status = 'Assigned (Not MAC Studio due to capacity)'
+                    else:
+                        infeasible = all(enrollment > capacities[r] for r in rooms)
+                        status = 'Infeasible' if infeasible else 'Unassigned'
             # Special status for FBA Graduate Seminar Room courses
             elif c in fba_courses_set:
                 assigned_to_fba = (assigned_room1 == fba_room) or (assigned_room2 == fba_room)
