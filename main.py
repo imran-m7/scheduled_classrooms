@@ -730,6 +730,59 @@ def main():
                         prob += x[c2, a_b_13_room, t] == 0
     # --- End preferred assignment for A B.13 - Class/PSY Lab courses ---
 
+    # --- Add preferred assignment for CS511.1 and MBA535.1 to B F1.25 Computer Lab if possible, else any available computer lab ---
+    cs_mba_lab_courses = ['CS511.1', 'MBA535.1']
+    preferred_lab = 'B F1.25 Computer Lab'
+    for course in cs_mba_lab_courses:
+        for t in course_times.get(course, []):
+            enrollment = get_enrollment(course)
+            # Check if preferred_lab is already preassigned or forced to another course at this time
+            preferred_lab_taken = False
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, preferred_lab, t) in x:
+                        if c2 in special_lab_courses or c2 in cs_mba_lab_courses:
+                            preferred_lab_taken = True
+                            break
+            if not preferred_lab_taken and preferred_lab in computer_lab_rooms and capacities[preferred_lab] >= (enrollment or 0):
+                for r in rooms:
+                    if r == preferred_lab:
+                        if (course, r, t) in x:
+                            prob += x[course, r, t] == 1
+                    elif r in computer_lab_rooms:
+                        if (course, r, t) in x:
+                            prob += x[course, r, t] == 0
+                for c2 in courses:
+                    if c2 != course and t in course_times.get(c2, []):
+                        if (c2, preferred_lab, t) in x:
+                            prob += x[c2, preferred_lab, t] == 0
+            else:
+                available_labs = [r for r in computer_lab_rooms if capacities[r] >= (enrollment or 0)]
+                prob += pulp.lpSum([x[course, r, t] for r in available_labs]) == 1
+                for r in rooms:
+                    if r not in computer_lab_rooms:
+                        if (course, r, t) in x:
+                            prob += x[course, r, t] == 0
+    # --- End preferred assignment for CS511.1 and MBA535.1 ---
+
+    # --- Add fixed assignment for CS509.1 to A F1.4 - Class/Laboratory ---
+    cs509_course = 'CS509.1'
+    cs509_room = 'A F1.4 - Class/Laboratory'
+    for t in course_times.get(cs509_course, []):
+        for r in rooms:
+            if r == cs509_room:
+                if (cs509_course, r, t) in x:
+                    prob += x[cs509_course, r, t] == 1
+            else:
+                if (cs509_course, r, t) in x:
+                    prob += x[cs509_course, r, t] == 0
+        # Block this room at this time for all other courses
+        for c2 in courses:
+            if c2 != cs509_course and t in course_times.get(c2, []):
+                if (c2, cs509_room, t) in x:
+                    prob += x[c2, cs509_room, t] == 0
+    # --- End fixed assignment for CS509.1 ---
+
     # Solve
     prob.solve()
 
@@ -834,109 +887,126 @@ def main():
                     if pulp.value(x[c, r, t2]) == 1:
                         assigned_room2 = r
                         cap2 = capacities[r]
-            # Special status for ECON Lab forced courses
-            econ_lab_courses = set(['BUS602.1', 'MBA581.1', 'ECON506.1', 'ECON601.1', 'ECON 601.1'])
-            econ_lab_room = 'B F1.2 - Class/ECON Lab'
-            if c in econ_lab_courses:
-                assigned_to_econ_lab = (assigned_room1 == econ_lab_room) or (assigned_room2 == econ_lab_room)
-                if assigned_to_econ_lab:
-                    status = 'Assigned (ECON Lab)'
-                else:
-                    if (assigned_room1 or assigned_room2):
-                        status = 'Assigned (Not ECON Lab)'
-                    else:
-                        infeasible = all(enrollment > capacities[r] for r in rooms)
-                        status = 'Infeasible' if infeasible else 'Unassigned'
-            # Special status for multimedia studio courses
-            elif c in multimedia_courses_set:
-                assigned_to_vacd = (assigned_room1 == multimedia_room) or (assigned_room2 == multimedia_room)
-                if assigned_to_vacd:
-                    status = 'Assigned (VACD Multimedia Studio)'
-                else:
-                    if (assigned_room1 or assigned_room2):
-                        status = 'Assigned (Not VACD Multimedia Studio due to capacity)'
-                    else:
-                        infeasible = all(enrollment > capacities[r] for r in rooms)
-                        status = 'Infeasible' if infeasible else 'Unassigned'
-                # For VA312.1 and VA312.2, always use the same status as the other three
-                if c in force_multimedia_courses:
-                    status = 'Assigned (VACD Multimedia Studio)'
-            # Special status for MAC Studio courses
-            elif c in mac_courses_set:
-                assigned_to_mac = (assigned_room1 == mac_room) or (assigned_room2 == mac_room)
-                if assigned_to_mac:
-                    status = 'Assigned (MAC Studio)'
-                else:
-                    if (assigned_room1 or assigned_room2):
-                        status = 'Assigned (Not MAC Studio due to capacity)'
-                    else:
-                        infeasible = all(enrollment > capacities[r] for r in rooms)
-                        status = 'Infeasible' if infeasible else 'Unassigned'
-            # Special status for FBA Graduate Seminar Room courses
-            elif c in fba_courses_set:
-                assigned_to_fba = (assigned_room1 == fba_room) or (assigned_room2 == fba_room)
-                if assigned_to_fba:
-                    status = 'Assigned (FBA Graduate Seminar Room)'
-                else:
-                    if (assigned_room1 or assigned_room2):
-                        status = 'Assigned (Not FBA Graduate Seminar Room due to capacity)'
-                    else:
-                        infeasible = all(enrollment > capacities[r] for r in rooms)
-                        status = 'Infeasible' if infeasible else 'Unassigned'
-            # Special status for Drawing Studio courses
-            elif c in drawing_courses_set:
-                drawing_room = 'A B.16 - VACD Drawing Studio'
-                assigned_to_drawing = (assigned_room1 == drawing_room) or (assigned_room2 == drawing_room)
-                if assigned_to_drawing:
-                    status = 'Assigned (VACD Drawing Studio)'
-                else:
-                    if (assigned_room1 or assigned_room2):
-                        status = 'Assigned (Not VACD Drawing Studio due to capacity)'
-                    else:
-                        infeasible = all(enrollment > capacities[r] for r in rooms)
-                        status = 'Infeasible' if infeasible else 'Unassigned'
-            # Special status for B F1.10 Class/ART Studio courses
-            elif c in b_f1_10_courses_set:
-                b_f1_10_room = 'B F1.10 Class/ART Studio'
-                assigned_to_b_f1_10 = (assigned_room1 == b_f1_10_room) or (assigned_room2 == b_f1_10_room)
-                if assigned_to_b_f1_10:
-                    status = 'Assigned (B F1.10 Class/ART Studio)'
-                else:
-                    if (assigned_room1 or assigned_room2):
-                        status = 'Assigned (Not B F1.10 Class/ART Studio due to capacity)'
-                    else:
-                        infeasible = all(enrollment > capacities[r] for r in rooms)
-                        status = 'Infeasible' if infeasible else 'Unassigned'
-            # Special status for A F3.10 - Architecture Classroom courses
-            elif c in a_f3_10_courses_set:
-                a_f3_10_room = 'A F3.10 - Architecture Classroom'
-                assigned_to_a_f3_10 = (assigned_room1 == a_f3_10_room) or (assigned_room2 == a_f3_10_room)
-                if assigned_to_a_f3_10:
-                    status = 'Assigned (A F3.10 - Architecture Classroom)'
-                else:
-                    if (assigned_room1 or assigned_room2):
-                        status = 'Assigned (Not A F3.10 - Architecture Classroom due to capacity)'
-                    else:
-                        infeasible = all(enrollment > capacities[r] for r in rooms)
-                        status = 'Infeasible' if infeasible else 'Unassigned'
-            # Special status for A B.13 - Class/PSY Lab courses
-            elif c in a_b_13_courses_set:
-                a_b_13_room = 'A B.13 - Class/PSY Lab'
-                assigned_to_a_b_13 = (assigned_room1 == a_b_13_room) or (assigned_room2 == a_b_13_room)
-                if assigned_to_a_b_13:
-                    status = 'Assigned (A B.13 - Class/PSY Lab)'
-                else:
-                    if (assigned_room1 or assigned_room2):
-                        status = 'Assigned (Not A B.13 - Class/PSY Lab due to capacity)'
-                    else:
-                        infeasible = all(enrollment > capacities[r] for r in rooms)
-                        status = 'Infeasible' if infeasible else 'Unassigned'
-            else:
-                if (t1 and assigned_room1) or (t2 and assigned_room2):
-                    status = 'Assigned'
+            # --- Only override status for CS511.1 and MBA535.1 if assigned to a computer lab ---
+            if c in cs_mba_lab_courses:
+                assigned_to_lab = (assigned_room1 in computer_lab_rooms) or (assigned_room2 in computer_lab_rooms)
+                if assigned_to_lab:
+                    status = 'Assigned (Special Lab)'
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
+            # --- Assignment status for CS509.1 ---
+            elif c == 'CS509.1':
+                cs509_room = 'A F1.4 - Class/Laboratory'
+                assigned_to_cs509_room = (assigned_room1 == cs509_room) or (assigned_room2 == cs509_room)
+                if assigned_to_cs509_room:
+                    status = 'Assigned (Class/Laboratory)'
+                else:
+                    infeasible = all(enrollment > capacities[r] for r in rooms)
+                    status = 'Infeasible' if infeasible else 'Unassigned'
+            else:
+                # Special status for ECON Lab forced courses
+                econ_lab_courses = set(['BUS602.1', 'MBA581.1', 'ECON506.1', 'ECON601.1', 'ECON 601.1'])
+                econ_lab_room = 'B F1.2 - Class/ECON Lab'
+                if c in econ_lab_courses:
+                    assigned_to_econ_lab = (assigned_room1 == econ_lab_room) or (assigned_room2 == econ_lab_room)
+                    if assigned_to_econ_lab:
+                        status = 'Assigned (ECON Lab)'
+                    else:
+                        if (assigned_room1 or assigned_room2):
+                            status = 'Assigned (Not ECON Lab)'
+                        else:
+                            infeasible = all(enrollment > capacities[r] for r in rooms)
+                            status = 'Infeasible' if infeasible else 'Unassigned'
+                # Special status for multimedia studio courses
+                elif c in multimedia_courses_set:
+                    assigned_to_vacd = (assigned_room1 == multimedia_room) or (assigned_room2 == multimedia_room)
+                    if assigned_to_vacd:
+                        status = 'Assigned (VACD Multimedia Studio)'
+                    else:
+                        if (assigned_room1 or assigned_room2):
+                            status = 'Assigned (Not VACD Multimedia Studio due to capacity)'
+                        else:
+                            infeasible = all(enrollment > capacities[r] for r in rooms)
+                            status = 'Infeasible' if infeasible else 'Unassigned'
+                    if c in force_multimedia_courses:
+                        status = 'Assigned (VACD Multimedia Studio)'
+                # Special status for MAC Studio courses
+                elif c in mac_courses_set:
+                    assigned_to_mac = (assigned_room1 == mac_room) or (assigned_room2 == mac_room)
+                    if assigned_to_mac:
+                        status = 'Assigned (MAC Studio)'
+                    else:
+                        if (assigned_room1 or assigned_room2):
+                            status = 'Assigned (Not MAC Studio due to capacity)'
+                        else:
+                            infeasible = all(enrollment > capacities[r] for r in rooms)
+                            status = 'Infeasible' if infeasible else 'Unassigned'
+                # Special status for FBA Graduate Seminar Room courses
+                elif c in fba_courses_set:
+                    assigned_to_fba = (assigned_room1 == fba_room) or (assigned_room2 == fba_room)
+                    if assigned_to_fba:
+                        status = 'Assigned (FBA Graduate Seminar Room)'
+                    else:
+                        if (assigned_room1 or assigned_room2):
+                            status = 'Assigned (Not FBA Graduate Seminar Room due to capacity)'
+                        else:
+                            infeasible = all(enrollment > capacities[r] for r in rooms)
+                            status = 'Infeasible' if infeasible else 'Unassigned'
+                # Special status for Drawing Studio courses
+                elif c in drawing_courses_set:
+                    drawing_room = 'A B.16 - VACD Drawing Studio'
+                    assigned_to_drawing = (assigned_room1 == drawing_room) or (assigned_room2 == drawing_room)
+                    if assigned_to_drawing:
+                        status = 'Assigned (VACD Drawing Studio)'
+                    else:
+                        if (assigned_room1 or assigned_room2):
+                            status = 'Assigned (Not VACD Drawing Studio due to capacity)'
+                        else:
+                            infeasible = all(enrollment > capacities[r] for r in rooms)
+                            status = 'Infeasible' if infeasible else 'Unassigned'
+                # Special status for B F1.10 Class/ART Studio courses
+                elif c in b_f1_10_courses_set:
+                    b_f1_10_room = 'B F1.10 Class/ART Studio'
+                    assigned_to_b_f1_10 = (assigned_room1 == b_f1_10_room) or (assigned_room2 == b_f1_10_room)
+                    if assigned_to_b_f1_10:
+                        status = 'Assigned (B F1.10 Class/ART Studio)'
+                    else:
+                        if (assigned_room1 or assigned_room2):
+                            status = 'Assigned (Not B F1.10 Class/ART Studio due to capacity)'
+                        else:
+                            infeasible = all(enrollment > capacities[r] for r in rooms)
+                            status = 'Infeasible' if infeasible else 'Unassigned'
+                # Special status for A F3.10 - Architecture Classroom courses
+                elif c in a_f3_10_courses_set:
+                    a_f3_10_room = 'A F3.10 - Architecture Classroom'
+                    assigned_to_a_f3_10 = (assigned_room1 == a_f3_10_room) or (assigned_room2 == a_f3_10_room)
+                    if assigned_to_a_f3_10:
+                        status = 'Assigned (A F3.10 - Architecture Classroom)'
+                    else:
+                        if (assigned_room1 or assigned_room2):
+                            status = 'Assigned (Not A F3.10 - Architecture Classroom due to capacity)'
+                        else:
+                            infeasible = all(enrollment > capacities[r] for r in rooms)
+                            status = 'Infeasible' if infeasible else 'Unassigned'
+                # Special status for A B.13 - Class/PSY Lab courses
+                elif c in a_b_13_courses_set:
+                    a_b_13_room = 'A B.13 - Class/PSY Lab'
+                    assigned_to_a_b_13 = (assigned_room1 == a_b_13_room) or (assigned_room2 == a_b_13_room)
+                    if assigned_to_a_b_13:
+                        status = 'Assigned (A B.13 - Class/PSY Lab)'
+                    else:
+                        if (assigned_room1 or assigned_room2):
+                            status = 'Assigned (Not A B.13 - Class/PSY Lab due to capacity)'
+                        else:
+                            infeasible = all(enrollment > capacities[r] for r in rooms)
+                            status = 'Infeasible' if infeasible else 'Unassigned'
+                else:
+                    if (t1 and assigned_room1) or (t2 and assigned_room2):
+                        status = 'Assigned'
+                    else:
+                        infeasible = all(enrollment > capacities[r] for r in rooms)
+                        status = 'Infeasible' if infeasible else 'Unassigned'
         # Skip unassigned or infeasible ENS207 rows
         if c == 'ENS207' and status != 'Assigned':
             continue
@@ -945,7 +1015,6 @@ def main():
         ws.append([c, assigned_room1 or '', t1, assigned_room2 or '', t2, enrollment, cap1, cap2, status])
         excel_rows_written += 1
     print(f'Total courses: {len(courses)}, Excel rows written: {excel_rows_written}')
-    print('--- End Excel output course codes ---')
     wb.save('course_assignments.xlsx')
     print(f"\nResults saved to course_assignments.xlsx. Total assigned courses: {assigned_courses} out of {len(courses)}")
 
