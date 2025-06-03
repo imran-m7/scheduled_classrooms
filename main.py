@@ -463,6 +463,53 @@ def main():
                         prob += x[c2, p['room'], p['time']] == 0
     # --- End fixed assignments ---
 
+    # --- Add fixed assignment for ECON108.1 to B F1.2 - Class/Econ Lab ---
+    econ_room = 'B F1.2 - Class/Econ Lab'
+    econ_course = 'ECON108.1'
+    # Find the scheduled time for ECON108.1
+    econ_times = course_times.get(econ_course, [])
+    for econ_time in econ_times:
+        # Fix assignment
+        if (econ_course, econ_room, econ_time) in x:
+            prob += x[econ_course, econ_room, econ_time] == 1
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != econ_course and econ_time in course_times.get(c2, []):
+                    if (c2, econ_room, econ_time) in x:
+                        prob += x[c2, econ_room, econ_time] == 0
+    # --- End fixed assignment for ECON108.1 ---
+
+    # --- Add preferred assignment for Multimedia Studio courses ---
+    multimedia_room = 'A B.1 - VACD Multimedia Studio'
+    multimedia_courses = ['ELIT103.1', 'ELIT103.2', 'VA312.1', 'VA312.2', 'VA451.1']
+    for course in multimedia_courses:
+        for t in course_times.get(course, []):
+            enrollment = get_enrollment(course)
+            if enrollment is not None and multimedia_room in capacities:
+                if capacities[multimedia_room] >= enrollment:
+                    # Force assignment to multimedia studio and block all other rooms
+                    for r in rooms:
+                        if r == multimedia_room:
+                            if (course, r, t) in x:
+                                prob += x[course, r, t] == 1
+                        else:
+                            if (course, r, t) in x:
+                                prob += x[course, r, t] == 0
+                    # Block this room at this time for all other courses
+                    for c2 in courses:
+                        if c2 != course and t in course_times.get(c2, []):
+                            if (c2, multimedia_room, t) in x:
+                                prob += x[c2, multimedia_room, t] == 0
+                else:
+                    # Do not allow assignment to multimedia studio, must assign to another room
+                    for r in rooms:
+                        if r == multimedia_room:
+                            if (course, r, t) in x:
+                                prob += x[course, r, t] == 0
+                    # Ensure assignment to some other room with enough capacity
+                    prob += pulp.lpSum([x[course, r, t] for r in rooms if r != multimedia_room and capacities[r] >= enrollment]) == 1
+    # --- End preferred assignment for Multimedia Studio courses ---
+
     # Solve
     prob.solve()
 
@@ -536,6 +583,7 @@ def main():
     assigned_courses = 0
     excel_rows_written = 0
     print('\n--- Excel output course codes (one row per course, up to two times) ---')
+    multimedia_courses_set = set(['ELIT103.1', 'ELIT103.2', 'VA312.1', 'VA312.2', 'VA451.1'])
     for c in courses:
         enrollment = get_enrollment(c)
         # If course is a two-day course, use the provided times
@@ -563,12 +611,27 @@ def main():
                     if pulp.value(x[c, r, t2]) == 1:
                         assigned_room2 = r
                         cap2 = capacities[r]
-            if (t1 and assigned_room1) or (t2 and assigned_room2):
-                status = 'Assigned'
-                assigned_courses += 1
+            # Special status for multimedia studio courses
+            if c in multimedia_courses_set:
+                vacd_room = 'A B.1 - VACD Multimedia Studio'
+                # If assigned to studio for any time
+                assigned_to_vacd = (assigned_room1 == vacd_room) or (assigned_room2 == vacd_room)
+                if assigned_to_vacd:
+                    status = 'Assigned (VACD Multimedia Studio)'
+                else:
+                    # If assigned to a different room (not unassigned or infeasible)
+                    if (assigned_room1 or assigned_room2):
+                        status = 'Assigned (Not VACD Multimedia Studio due to capacity)'
+                    else:
+                        infeasible = all(enrollment > capacities[r] for r in rooms)
+                        status = 'Infeasible' if infeasible else 'Unassigned'
             else:
-                infeasible = all(enrollment > capacities[r] for r in rooms)
-                status = 'Infeasible' if infeasible else 'Unassigned'
+                if (t1 and assigned_room1) or (t2 and assigned_room2):
+                    status = 'Assigned'
+                    assigned_courses += 1
+                else:
+                    infeasible = all(enrollment > capacities[r] for r in rooms)
+                    status = 'Infeasible' if infeasible else 'Unassigned'
         # Skip unassigned or infeasible ENS207 rows
         if c == 'ENS207' and status != 'Assigned':
             continue
