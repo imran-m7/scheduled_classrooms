@@ -479,6 +479,44 @@ def main():
                         prob += x[c2, econ_room, econ_time] == 0
     # --- End fixed assignment for ECON108.1 ---
 
+    # --- Add fixed assignment for BUS602.1 and MBA581.1 to B F1.2 - Class/ECON Lab (force even if capacity is not enough) ---
+    econ_room = 'B F1.2 - Class/ECON Lab'
+    bus_mba_courses = ['BUS602.1', 'MBA581.1']
+    for course in bus_mba_courses:
+        for t in course_times.get(course, []):
+            for r in rooms:
+                if r == econ_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, econ_room, t) in x:
+                        prob += x[c2, econ_room, t] == 0
+    # --- End fixed assignment for BUS602.1 and MBA581.1 ---
+
+    # --- Force ECON506.1 and ECON601.1 to be assigned together in B F1.2 - Class/ECON Lab at the same time (force even if capacity is not enough) ---
+    econ_pair = ['ECON506.1', 'ECON601.1', 'ECON 601.1']
+    econ506_times = set(course_times.get('ECON506.1', []))
+    econ601_times = set(course_times.get('ECON601.1', [])) | set(course_times.get('ECON 601.1', []))
+    common_times = econ506_times & econ601_times
+    for t in common_times:
+        for course in ['ECON506.1', 'ECON601.1', 'ECON 601.1']:
+            for r in rooms:
+                if r == econ_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+        for c2 in courses:
+            if c2 not in econ_pair and t in course_times.get(c2, []):
+                if (c2, econ_room, t) in x:
+                    prob += x[c2, econ_room, t] == 0
+    # --- End force ECON506.1 and ECON601.1 together ---
+
     # --- Add preferred assignment for Multimedia Studio courses ---
     multimedia_room = 'A B.1 - VACD Multimedia Studio'
     multimedia_courses = ['ELIT103.1', 'ELIT103.2', 'VA312.1', 'VA312.2', 'VA451.1']
@@ -650,6 +688,48 @@ def main():
                         prob += x[c2, b_f1_10_room, t] == 0
     # --- End preferred assignment for B F1.10 Class/ART Studio courses ---
 
+    # --- Add preferred assignment for A F3.10 - Architecture Classroom courses ---
+    a_f3_10_room = 'A F3.10 - Architecture Classroom'
+    a_f3_10_courses_set = set(['ARCH510.1', 'ARCH517.1', 'ARCH569.1'])
+    for course in a_f3_10_courses_set:
+        for t in course_times.get(course, []):
+            enrollment = get_enrollment(course)
+            # Force assignment to A F3.10 - Architecture Classroom regardless of capacity
+            for r in rooms:
+                if r == a_f3_10_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, a_f3_10_room, t) in x:
+                        prob += x[c2, a_f3_10_room, t] == 0
+    # --- End preferred assignment for A F3.10 - Architecture Classroom courses ---
+
+    # --- Add preferred assignment for A B.13 - Class/PSY Lab courses ---
+    a_b_13_room = 'A B.13 - Class/PSY Lab'
+    a_b_13_courses_set = set(['PSY519.1', 'PSY524.1', 'PSY529.1'])
+    for course in a_b_13_courses_set:
+        for t in course_times.get(course, []):
+            enrollment = get_enrollment(course)
+            # Force assignment to A B.13 - Class/PSY Lab regardless of capacity
+            for r in rooms:
+                if r == a_b_13_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, a_b_13_room, t) in x:
+                        prob += x[c2, a_b_13_room, t] == 0
+    # --- End preferred assignment for A B.13 - Class/PSY Lab courses ---
+
     # Solve
     prob.solve()
 
@@ -754,8 +834,21 @@ def main():
                     if pulp.value(x[c, r, t2]) == 1:
                         assigned_room2 = r
                         cap2 = capacities[r]
+            # Special status for ECON Lab forced courses
+            econ_lab_courses = set(['BUS602.1', 'MBA581.1', 'ECON506.1', 'ECON601.1', 'ECON 601.1'])
+            econ_lab_room = 'B F1.2 - Class/ECON Lab'
+            if c in econ_lab_courses:
+                assigned_to_econ_lab = (assigned_room1 == econ_lab_room) or (assigned_room2 == econ_lab_room)
+                if assigned_to_econ_lab:
+                    status = 'Assigned (ECON Lab)'
+                else:
+                    if (assigned_room1 or assigned_room2):
+                        status = 'Assigned (Not ECON Lab)'
+                    else:
+                        infeasible = all(enrollment > capacities[r] for r in rooms)
+                        status = 'Infeasible' if infeasible else 'Unassigned'
             # Special status for multimedia studio courses
-            if c in multimedia_courses_set:
+            elif c in multimedia_courses_set:
                 assigned_to_vacd = (assigned_room1 == multimedia_room) or (assigned_room2 == multimedia_room)
                 if assigned_to_vacd:
                     status = 'Assigned (VACD Multimedia Studio)'
@@ -811,6 +904,30 @@ def main():
                 else:
                     if (assigned_room1 or assigned_room2):
                         status = 'Assigned (Not B F1.10 Class/ART Studio due to capacity)'
+                    else:
+                        infeasible = all(enrollment > capacities[r] for r in rooms)
+                        status = 'Infeasible' if infeasible else 'Unassigned'
+            # Special status for A F3.10 - Architecture Classroom courses
+            elif c in a_f3_10_courses_set:
+                a_f3_10_room = 'A F3.10 - Architecture Classroom'
+                assigned_to_a_f3_10 = (assigned_room1 == a_f3_10_room) or (assigned_room2 == a_f3_10_room)
+                if assigned_to_a_f3_10:
+                    status = 'Assigned (A F3.10 - Architecture Classroom)'
+                else:
+                    if (assigned_room1 or assigned_room2):
+                        status = 'Assigned (Not A F3.10 - Architecture Classroom due to capacity)'
+                    else:
+                        infeasible = all(enrollment > capacities[r] for r in rooms)
+                        status = 'Infeasible' if infeasible else 'Unassigned'
+            # Special status for A B.13 - Class/PSY Lab courses
+            elif c in a_b_13_courses_set:
+                a_b_13_room = 'A B.13 - Class/PSY Lab'
+                assigned_to_a_b_13 = (assigned_room1 == a_b_13_room) or (assigned_room2 == a_b_13_room)
+                if assigned_to_a_b_13:
+                    status = 'Assigned (A B.13 - Class/PSY Lab)'
+                else:
+                    if (assigned_room1 or assigned_room2):
+                        status = 'Assigned (Not A B.13 - Class/PSY Lab due to capacity)'
                     else:
                         infeasible = all(enrollment > capacities[r] for r in rooms)
                         status = 'Infeasible' if infeasible else 'Unassigned'
