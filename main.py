@@ -231,6 +231,36 @@ def main():
         base = code.split('.')[0]
         return enrollments_raw.get(base, None)
 
+    # Ensure graduate courses CS600, EE603, ME580, ME605 are present in the schedule before MILP model setup
+    grad_courses = ['CS600', 'EE603', 'ME580', 'ME605']
+    grad_needed = set()
+    for gc in grad_courses:
+        code = f'{gc}.1'
+        if code in enrollments_raw:
+            grad_needed.add(code)
+    grad_schedule = load_course_schedule(GRADUATE_DOCX)
+    for gc in grad_needed:
+        found = any(s['course_code'] == gc for s in schedule)
+        if not found:
+            # Try to match by base code in grad_schedule
+            base_gc = gc.split('.')[0]
+            for s in grad_schedule:
+                sched_base = s['course_code'].split('.')[0]
+                if sched_base == base_gc:
+                    # Append with correct section code
+                    schedule.append({'course_code': gc, 'time': s['time'], 'room': s['room']})
+                    break
+
+    # Debug: Print grad course presence in enrollments and schedule
+    print('--- Graduate course debug ---')
+    for gc in grad_needed:
+        print(f'{gc} in enrollments_raw: {gc in enrollments_raw}, enrollment: {enrollments_raw.get(gc)}')
+        found_sched = [s for s in schedule if s['course_code'] == gc]
+        print(f'{gc} in schedule: {len(found_sched)} entries')
+        for s in found_sched:
+            print(f'  time: {s["time"]}, room: {s["room"]}')
+    print('--- End grad course debug ---')
+
     # Build sets (only include courses with enrollment info)
     courses = [s['course_code'] for s in schedule if get_enrollment(s['course_code']) is not None]
     rooms = list(capacities.keys())
