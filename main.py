@@ -510,6 +510,37 @@ def main():
                     prob += pulp.lpSum([x[course, r, t] for r in rooms if r != multimedia_room and capacities[r] >= enrollment]) == 1
     # --- End preferred assignment for Multimedia Studio courses ---
 
+    # --- Add preferred assignment for FBA Graduate Seminar Room courses ---
+    fba_room = 'B F1.1 FBA Graduate Seminar Room'
+    fba_courses = ['IBF407.1', 'MAN328.1', 'MAN406.1']
+    for course in fba_courses:
+        for t in course_times.get(course, []):
+            enrollment = get_enrollment(course)
+            if enrollment is not None and fba_room in capacities:
+                if capacities[fba_room] >= enrollment:
+                    # Force assignment to FBA room and block all other rooms
+                    for r in rooms:
+                        if r == fba_room:
+                            if (course, r, t) in x:
+                                prob += x[course, r, t] == 1
+                        else:
+                            if (course, r, t) in x:
+                                prob += x[course, r, t] == 0
+                    # Block this room at this time for all other courses
+                    for c2 in courses:
+                        if c2 != course and t in course_times.get(c2, []):
+                            if (c2, fba_room, t) in x:
+                                prob += x[c2, fba_room, t] == 0
+                else:
+                    # Do not allow assignment to FBA room, must assign to another room
+                    for r in rooms:
+                        if r == fba_room:
+                            if (course, r, t) in x:
+                                prob += x[course, r, t] == 0
+                    # Ensure assignment to some other room with enough capacity
+                    prob += pulp.lpSum([x[course, r, t] for r in rooms if r != fba_room and capacities[r] >= enrollment]) == 1
+    # --- End preferred assignment for FBA Graduate Seminar Room courses ---
+
     # Solve
     prob.solve()
 
@@ -584,6 +615,8 @@ def main():
     excel_rows_written = 0
     print('\n--- Excel output course codes (one row per course, up to two times) ---')
     multimedia_courses_set = set(['ELIT103.1', 'ELIT103.2', 'VA312.1', 'VA312.2', 'VA451.1'])
+    fba_courses_set = set(['IBF407.1', 'MAN328.1', 'MAN406.1'])
+    fba_room = 'B F1.1 FBA Graduate Seminar Room'
     for c in courses:
         enrollment = get_enrollment(c)
         # If course is a two-day course, use the provided times
@@ -614,14 +647,23 @@ def main():
             # Special status for multimedia studio courses
             if c in multimedia_courses_set:
                 vacd_room = 'A B.1 - VACD Multimedia Studio'
-                # If assigned to studio for any time
                 assigned_to_vacd = (assigned_room1 == vacd_room) or (assigned_room2 == vacd_room)
                 if assigned_to_vacd:
                     status = 'Assigned (VACD Multimedia Studio)'
                 else:
-                    # If assigned to a different room (not unassigned or infeasible)
                     if (assigned_room1 or assigned_room2):
                         status = 'Assigned (Not VACD Multimedia Studio due to capacity)'
+                    else:
+                        infeasible = all(enrollment > capacities[r] for r in rooms)
+                        status = 'Infeasible' if infeasible else 'Unassigned'
+            # Special status for FBA Graduate Seminar Room courses
+            elif c in fba_courses_set:
+                assigned_to_fba = (assigned_room1 == fba_room) or (assigned_room2 == fba_room)
+                if assigned_to_fba:
+                    status = 'Assigned (FBA Graduate Seminar Room)'
+                else:
+                    if (assigned_room1 or assigned_room2):
+                        status = 'Assigned (Not FBA Graduate Seminar Room due to capacity)'
                     else:
                         infeasible = all(enrollment > capacities[r] for r in rooms)
                         status = 'Infeasible' if infeasible else 'Unassigned'
