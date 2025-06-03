@@ -179,6 +179,13 @@ def main():
     schedule_grad = load_course_schedule(GRADUATE_DOCX)
     schedule = schedule_main + schedule_grad
 
+    # --- Ensure POLS304.1 is present in the schedule if in enrollments but missing from schedule ---
+    if 'POLS304.1' in enrollments_raw:
+        found_pols3041 = any(s['course_code'] == 'POLS304.1' for s in schedule)
+        if not found_pols3041:
+            print('Adding missing POLS304.1 to schedule with time Wed. 12:00-14:50 and room to be assigned by model.')
+            schedule.append({'course_code': 'POLS304.1', 'time': 'Wed. 12:00-14:50', 'room': ''})
+
     # Remove known duplicate: ELT571.1 (keep only one entry with the same code and time)
     seen = set()
     deduped_schedule = []
@@ -191,6 +198,13 @@ def main():
             deduped_schedule.append(s)
             seen.add(key)
     schedule = deduped_schedule
+
+    # --- Ensure POLS304.1 is present in the schedule if in enrollments but missing from schedule ---
+    if 'POLS304.1' in enrollments_raw:
+        found_pols3041 = any(s['course_code'] == 'POLS304.1' for s in schedule)
+        if not found_pols3041:
+            print('Adding missing POLS304.1 to schedule with time Wed. 12:00-14:50 and room to be assigned by model.')
+            schedule.append({'course_code': 'POLS304.1', 'time': 'Wed. 12:00-14:50', 'room': ''})
 
     # Update schedule: replace all ENS207-3.* and ENS207-6.* with ENS207, collect all times/rooms
     new_schedule = []
@@ -229,7 +243,9 @@ def main():
         if code in enrollments_raw:
             return enrollments_raw[code]
         base = code.split('.')[0]
-        return enrollments_raw.get(base, None)
+        if base in enrollments_raw:
+            return enrollments_raw[base]
+        return None
 
     # Ensure graduate courses CS600, EE603, ME580, ME605 are present in the schedule before MILP model setup
     grad_courses = ['CS600', 'EE603', 'ME580', 'ME605']
@@ -262,10 +278,33 @@ def main():
     print('--- End grad course debug ---')
 
     # Build sets (only include courses with enrollment info)
-    courses = [s['course_code'] for s in schedule if get_enrollment(s['course_code']) is not None]
+    # If a sectioned code (e.g., POLS304.1) is in the schedule but only the base code (POLS304) is in enrollments, include the sectioned code in courses
+    courses = set()
+    for s in schedule:
+        code = s['course_code']
+        base = code.split('.')[0]
+        # Add sectioned code if either code or base is in enrollments_raw
+        if code in enrollments_raw:
+            courses.add(code)
+        elif base in enrollments_raw:
+            courses.add(code)
+    courses = list(courses)
     rooms = list(capacities.keys())
     times = list(set(s['time'] for s in schedule))
     course_time = {s['course_code']: s['time'] for s in schedule}
+
+    # Debug: Check for POLS304.1 in courses and its enrollment
+    print('--- POLS304.1 debug ---')
+    print('POLS304.1 in courses:', 'POLS304.1' in courses)
+    print('POLS304.1 enrollment:', get_enrollment('POLS304.1'))
+    print('--- End POLS304.1 debug ---')
+
+    # Diagnostic: Print all schedule entries with base code POLS304
+    print('--- POLS304 schedule entries debug ---')
+    for s in schedule:
+        if s['course_code'].split('.')[0] == 'POLS304':
+            print(f"Schedule entry: {s['course_code']} at {s['time']} in {s['room']}")
+    print('--- End POLS304 schedule entries debug ---')
 
     # Decision variables: x[c, r] = 1 if course c assigned to room r
     x = pulp.LpVariable.dicts('assign', ((c, r) for c in courses for r in rooms), cat='Binary')
@@ -318,7 +357,7 @@ def main():
             print(f'Course {c} (enrollment: {get_enrollment(c)})')
 
     # Diagnostic: print infeasible courses (no room large enough)
-    print('\n--- Infeasible Courses (no room large enough) ---')
+    print('\n--- Infeasible Courses (no room large enough, before Excel output) ---')
     for c in courses:
         if all(get_enrollment(c) > capacities[r] for r in rooms):
             print(f'Course {c} (enrollment: {get_enrollment(c)})')
@@ -331,30 +370,45 @@ def main():
 
     assigned_courses = 0
     row_idx = 2  # Excel rows are 1-based, header is row 1
+    excel_rows_written = 0
+    print('\n--- Excel output course codes ---')
+    pols3041_found = False
     for c in courses:
-        assigned_room = None
-        for r in rooms:
-            if pulp.value(x[c, r]) == 1:
-                assigned_room = r
-                break
-        enrollment = get_enrollment(c)
-        time = course_time[c]
-        excel_code = c
-        # Special renaming for ENS209, ENS207, and ARCH216 in specific rows
-        if row_idx == 131 and c == 'ENS209':
-            excel_code = 'ENS209-3/6.1'
-        if row_idx == 334 and c == 'ENS207':
-            excel_code = 'ENS207-3/6.1'
-        if c == 'ARCH216':
-            excel_code = 'ARCH216-3/6.1'
-        if assigned_room:
-            ws.append([excel_code, assigned_room, time, enrollment, capacities[assigned_room], 'Assigned'])
-            assigned_courses += 1
-        else:
-            infeasible = all(enrollment > capacities[r] for r in rooms)
-            status = 'Infeasible' if infeasible else 'Unassigned'
-            ws.append([excel_code, '', time, enrollment, '', status])
-        row_idx += 1
+        if c == 'POLS304.1':
+            pols3041_found = True
+            # Removed verbose print
+        # Removed verbose print for all other courses
+        try:
+            assigned_room = None
+            for r in rooms:
+                if pulp.value(x[c, r]) == 1:
+                    assigned_room = r
+                    break
+            enrollment = get_enrollment(c)
+            time = course_time.get(c, 'MISSING_TIME')
+            excel_code = c
+            # Special renaming for ENS209, ENS207, and ARCH216 in specific rows
+            if row_idx == 131 and c == 'ENS209':
+                excel_code = 'ENS209-3/6.1'
+            if row_idx == 334 and c == 'ENS207':
+                excel_code = 'ENS207-3/6.1'
+            if c == 'ARCH216':
+                excel_code = 'ARCH216-3/6.1'
+            if assigned_room:
+                ws.append([excel_code, assigned_room, time, enrollment, capacities[assigned_room], 'Assigned'])
+                assigned_courses += 1
+            else:
+                infeasible = all(enrollment > capacities[r] for r in rooms)
+                status = 'Infeasible' if infeasible else 'Unassigned'
+                ws.append([excel_code, '', time, enrollment, '', status])
+            row_idx += 1
+            excel_rows_written += 1
+        except Exception as e:
+            print(f'Exception for course {c}: {e}')
+    print(f'Total courses: {len(courses)}, Excel rows written: {excel_rows_written}')
+    print('--- End Excel output course codes ---')
+    if not pols3041_found:
+        print('WARNING: POLS304.1 was not found in the Excel output loop!')
 
     wb.save('course_assignments.xlsx')
     print(f"\nResults saved to course_assignments.xlsx. Total assigned courses: {assigned_courses} out of {len(courses)}")
