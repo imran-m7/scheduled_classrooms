@@ -924,6 +924,26 @@ def main():
                         prob += x[c2, fabrication_lab_room, t] == 0
     # --- End fixed assignment for ARCH201.2 ---
 
+    # --- Add fixed assignment for ARCH110.1 to A B.16 - VACD Drawing Studio ---
+    vacd_drawing_room = 'A B.16 - VACD Drawing Studio'
+    vacd_drawing_courses = ['ARCH110.1']
+    for course in vacd_drawing_courses:
+        for t in course_times.get(course, []):
+            # Force assignment to A B.16 - VACD Drawing Studio regardless of capacity
+            for r in rooms:
+                if r == vacd_drawing_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, vacd_drawing_room, t) in x:
+                        prob += x[c2, vacd_drawing_room, t] == 0
+    # --- End fixed assignment for ARCH110.1 ---
+
     # Solve
     prob.solve()
 
@@ -1084,6 +1104,14 @@ def main():
                 assigned_to_fab_lab = (assigned_room1 == fabrication_lab_room) or (assigned_room2 == fabrication_lab_room)
                 if assigned_to_fab_lab:
                     status = 'Assigned (A B.8 - Fabrication Lab)'
+                else:
+                    infeasible = all(enrollment > capacities[r] for r in rooms)
+                    status = 'Infeasible' if infeasible else 'Unassigned'
+            # --- Assignment status for A B.16 - VACD Drawing Studio courses ---
+            elif c in ['ARCH110.1']:
+                assigned_to_vacd_drawing = (assigned_room1 == vacd_drawing_room) or (assigned_room2 == vacd_drawing_room)
+                if assigned_to_vacd_drawing:
+                    status = 'Assigned (A B.16 - VACD Drawing Studio)'
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
