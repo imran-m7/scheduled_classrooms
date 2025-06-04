@@ -846,7 +846,7 @@ def main():
 
     # --- Add fixed assignment for ARCH108.2, ARCH202.1, ARCH303.2, ARCH308.1 to A F3.7 - Small Architecture Studio ---
     small_arch_room = 'A F3.7 - Small Architecture Studio'
-    small_arch_courses = ['ARCH108.2', 'ARCH202.1', 'ARCH303.2', 'ARCH308.1']
+    small_arch_courses = ['ARCH108.2', 'ARCH202.1', 'ARCH303.2', 'ARCH308.1', 'ARCH106.1']
     for course in small_arch_courses:
         for t in course_times.get(course, []):
             # Force assignment to Small Architecture Studio regardless of capacity
@@ -862,7 +862,7 @@ def main():
                 if c2 != course and t in course_times.get(c2, []):
                     if (c2, small_arch_room, t) in x:
                         prob += x[c2, small_arch_room, t] == 0
-    # --- End fixed assignment for ARCH108.2, ARCH202.1, ARCH303.2, ARCH308.1 ---
+    # --- End fixed assignment for ARCH108.2, ARCH202.1, ARCH303.2, ARCH308.1, ARCH106.1 ---
 
     # --- Add fixed assignment for ARCH211.1, ARCH303.1, ARCH403.1, ARCH405.1, ARCH412.1 to A F2.16 - Architecture Studio ---
     f2_16_room = 'A F2.16 - Architecture Studio'
@@ -1111,6 +1111,14 @@ def main():
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
+            # --- Assignment status for Small Architecture Studio courses ---
+            elif c in ['ARCH108.2', 'ARCH202.1', 'ARCH303.2', 'ARCH308.1', 'ARCH106.1']:
+                assigned_to_small_arch = (assigned_room1 == small_arch_room) or (assigned_room2 == small_arch_room)
+                if assigned_to_small_arch:
+                    status = 'Assigned (Small Architecture Studio)'
+                else:
+                    infeasible = all(enrollment > capacities[r] for r in rooms)
+                    status = 'Infeasible' if infeasible else 'Unassigned'
             # --- Assignment status for A F2.8 - Drawing Studio courses ---
             elif c in ['ARCH202.3', 'ARCH304.2', 'ARCH414.1']:
                 assigned_to_f2_8 = (assigned_room1 == f2_8_room) or (assigned_room2 == f2_8_room)
@@ -1291,6 +1299,7 @@ def main():
     print("- Each course is assigned during its scheduled time (by construction)")
 
     # --- Add second meeting times for courses with two days ---
+   
     # Format: course_code: [first_time, second_time]
     two_day_courses = {
         'ELT370.1': ['Wed. 12:00-13:50', 'Thu. 09:00-09:50'],
