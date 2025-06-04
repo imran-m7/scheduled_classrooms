@@ -998,6 +998,67 @@ def main():
                     prob += x[c2, combined_studio_room, t] == 0
     # --- End special case for combined studio ---
 
+    # --- Block regular courses from being assigned to specialized classrooms ---
+    specialized_classrooms = [
+        'B F1.25 Computer Lab',
+        'A F1.18 - Computer Lab',
+        'A F1.3 - Computer Lab',
+        'A F1.4 - Class/Laboratory',
+        'A F2.16 - Architecture Studio',
+        'RC1.4 - Computer Laboratory',
+        'A F3.7 - Small Architecture Studio & A F3.8 - Big Architecture Studio',
+        'A F3.10 - Architecture Classroom',
+        'A F3.7 - Small Architecture Studio',
+        'A F3.8 - Big Architecture Studio',
+        'B F1.24 (MAC Studio)',
+        'A B.16 - VACD Drawing Studio',
+        'A B.1 - VACD Multimedia Studio',
+        'A F2.8 - Drawing Studio',
+        'A B.13 - Class/PSY Lab',
+        'A B.8 - Fabrication Lab',
+        'A B.2 - EE Lab',
+        'B F1.1 FBA Graduate Seminar Room',
+        'B F1.10 Class/ART Studio',
+        'B F1.2 - Class/ECON Lab',
+        'B F2.27 Creative Writing and Translation Studio',
+        'Sports Hall',
+        'RC.G1 - GBE Laboratory I',
+        'RC.G2 - GBE II',
+        'RC.G3 - GBE III',
+        'RC.G4 - GBE IV',
+        'RC.G5 - ME Laboratory',
+        'RC1.3 - GSM and Network Laboratories',
+        'RC1.5 - Electronic Laboratory',
+        'RC1.6 - Physics Laboratory',
+        'B F1.35 FBA Conference Room',
+        'B F1.35 FBA Conference Room & B F1.2 - Class/ECON Lab',
+        'A F3.7 - Small Architecture Studio & A F3.10 - Architecture Classroom',
+        'A F2.8 - Drawing Studio & A F2.16 - Architecture Studio',
+    ]
+    # Collect all special-case courses (already handled above)
+    special_courses = set([
+        'CS511.1', 'MBA535.1', 'CS509.1', 'VA502.1', 'VA517.1', 'VA519.1',
+        'ARCH100.1', 'ARCH108.1', 'ARCH201.1', 'ARCH108.2', 'ARCH202.1', 'ARCH303.2', 'ARCH308.1', 'ARCH106.1',
+        'ARCH211.1', 'ARCH303.1', 'ARCH403.1', 'ARCH405.1', 'ARCH412.1',
+        'ARCH202.3', 'ARCH304.2', 'ARCH414.1', 'ARCH201.2', 'ARCH110.1',
+        'ARCH208.1', 'ARCH208.2', 'ARCH216', 'ARCH360.1',
+        'ARCH210.1', 'ARCH311.1', 'ARCH358.1',
+        'ELIT103.1', 'ELIT103.2', 'VA312.1', 'VA312.2', 'VA451.1',
+        'IBF407.1', 'MAN328.1', 'MAN406.1',
+        'VA211.1', 'VA211.2', 'VA304.1', 'VA315.1', 'VA323.1', 'VA323.2', 'VA406.1', 'VA416.1', 'VA443.1', 'VA452.1', 'VA455.1',
+        'VA104.1', 'VA104.2', 'VA310.1', 'VA217.1', 'VA217.2', 'VA217.3', 'VA334.1',
+        'PSY519.1', 'PSY524.1', 'PSY529.1',
+        'BUS602.1', 'MBA581.1', 'ECON506.1', 'ECON601.1', 'ECON 601.1', 'ECON108.1',
+    ])
+    for c in courses:
+        if c in special_courses:
+            continue
+        for r in specialized_classrooms:
+            for t in course_times.get(c, []):
+                if (c, r, t) in x:
+                    prob += x[c, r, t] == 0
+    # --- End block for regular courses ---
+
     # Solve
     prob.solve()
 
@@ -1193,6 +1254,14 @@ def main():
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
+            # --- Assignment status for A F2.16 - Architecture Studio courses ---
+            elif c in ['ARCH211.1', 'ARCH303.1', 'ARCH403.1', 'ARCH405.1', 'ARCH412.1']:
+                assigned_to_f2_16 = (assigned_room1 == f2_16_room) or (assigned_room2 == f2_16_room)
+                if assigned_to_f2_16:
+                    status = 'Assigned (A F2.16 Architecture Studio)'
+                else:
+                    infeasible = all(enrollment > capacities[r] for r in rooms)
+                    status = 'Infeasible' if infeasible else 'Unassigned'
             else:
                 # Special status for ECON Lab forced courses
                 econ_lab_courses = set(['BUS602.1', 'MBA581.1', 'ECON506.1', 'ECON601.1', 'ECON 601.1'])
@@ -1204,6 +1273,7 @@ def main():
                     else:
                         if (assigned_room1 or assigned_room2):
                             status = 'Assigned (Not ECON Lab)'
+                       
                         else:
                             infeasible = all(enrollment > capacities[r] for r in rooms)
                             status = 'Infeasible' if infeasible else 'Unassigned'
