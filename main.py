@@ -95,10 +95,6 @@ def main():
     capacities = load_room_capacities(ROOMS_CSV)
 
     # Special case: merge all ENS207-3.* and ENS207-6.* into ENS207
-    print("DEBUG: ENS207-3.* and ENS207-6.* enrollments before merge:")
-    for k in enrollments_raw:
-        if k.startswith('ENS207-3.') or k.startswith('ENS207-6.'):
-            print(f"{k}: {enrollments_raw[k]}")
     ens207_total = 0
     ens207_times = set()
     ens207_rooms = set()
@@ -122,22 +118,18 @@ def main():
             del enrollments_raw[k]
     if ens207_total > 0:
         enrollments_raw['ENS207'] = ens207_total
-    print(f"DEBUG: ENS207 merged total enrollment: {ens207_total}")
 
     # Special case: merge ENS209-3 and ENS209-6 into ENS209, and map ENS209-3/6.* in schedule to ENS209
-    print("DEBUG: ENS209-3 and ENS209-6 enrollments before merge:")
     ens209_total = 0
     ens209_3_found = False
     ens209_6_found = False
     to_delete_209 = []
     for k in sorted(enrollments_raw.keys()):
         if k.startswith('ENS209-3') and not ens209_3_found and enrollments_raw[k] > 0:
-            print(f"{k}: {enrollments_raw[k]}")
             ens209_total += enrollments_raw[k]
             ens209_3_found = True
             to_delete_209.append(k)
         elif k.startswith('ENS209-6') and not ens209_6_found and enrollments_raw[k] > 0:
-            print(f"{k}: {enrollments_raw[k]}")
             ens209_total += enrollments_raw[k]
             ens209_6_found = True
             to_delete_209.append(k)
@@ -148,7 +140,6 @@ def main():
             del enrollments_raw[k]
     if ens209_total > 0:
         enrollments_raw['ENS209'] = ens209_total
-    print(f"DEBUG: ENS209 merged total enrollment: {ens209_total}")
 
     # Special case: merge ARCH216.1 and ARCH216-6.1 enrollments before merge:")
     arch216_total = 0
@@ -157,12 +148,10 @@ def main():
     to_delete_arch216 = []
     for k in sorted(enrollments_raw.keys()):
         if k == 'ARCH216.1' and not arch216_1_found and enrollments_raw[k] > 0:
-            print(f"{k}: {enrollments_raw[k]}")
             arch216_total += enrollments_raw[k]
             arch216_1_found = True
             to_delete_arch216.append(k)
         elif k == 'ARCH216-6.1' and not arch216_6_found and enrollments_raw[k] > 0:
-            print(f"{k}: {enrollments_raw[k]}")
             arch216_total += enrollments_raw[k]
             arch216_6_found = True
             to_delete_arch216.append(k)
@@ -173,7 +162,6 @@ def main():
             del enrollments_raw[k]
     if arch216_total > 0:
         enrollments_raw['ARCH216'] = arch216_total
-    print(f"DEBUG: ARCH216 merged total enrollment: {arch216_total}")
 
     schedule_main = load_course_schedule(SCHEDULE_DOCX)
     schedule_grad = load_course_schedule(GRADUATE_DOCX)
@@ -183,7 +171,6 @@ def main():
     if 'POLS304.1' in enrollments_raw:
         found_pols3041 = any(s['course_code'] == 'POLS304.1' for s in schedule)
         if not found_pols3041:
-            print('Adding missing POLS304.1 to schedule with time Wed. 12:00-14:50 and room to be assigned by model.')
             schedule.append({'course_code': 'POLS304.1', 'time': 'Wed. 12:00-14:50', 'room': ''})
 
     # Remove known duplicate: ELT571.1 (keep only one entry with the same code and time)
@@ -203,7 +190,6 @@ def main():
     if 'POLS304.1' in enrollments_raw:
         found_pols3041 = any(s['course_code'] == 'POLS304.1' for s in schedule)
         if not found_pols3041:
-            print('Adding missing POLS304.1 to schedule with time Wed. 12:00-14:50 and room to be assigned by model.')
             schedule.append({'course_code': 'POLS304.1', 'time': 'Wed. 12:00-14:50', 'room': ''})
 
     # Update schedule: replace all ENS207-3.* and ENS207-6.* with ENS207, collect all times/rooms
@@ -380,16 +366,6 @@ def main():
                     schedule.append({'course_code': gc, 'time': s['time'], 'room': s['room']})
                     break
 
-    # Debug: Print grad course presence in enrollments and schedule
-    print('--- Graduate course debug ---')
-    for gc in grad_needed:
-        print(f'{gc} in enrollments_raw: {gc in enrollments_raw}, enrollment: {enrollments_raw.get(gc)}')
-        found_sched = [s for s in schedule if s['course_code'] == gc]
-        print(f'{gc} in schedule: {len(found_sched)} entries')
-        for s in found_sched:
-            print(f'  time: {s["time"]}, room: {s["room"]}')
-    print('--- End grad course debug ---')
-
     # Build sets (only include courses with enrollment info)
     # If a sectioned code (e.g., POLS304.1) is in the schedule but only the base code (POLS304) is in enrollments, include the sectioned code in courses
     courses = set()
@@ -405,19 +381,6 @@ def main():
     rooms = list(capacities.keys())
     times = list(set(s['time'] for s in schedule))
     course_time = {s['course_code']: s['time'] for s in schedule}
-
-    # Debug: Check for POLS304.1 in courses and its enrollment
-    print('--- POLS304.1 debug ---')
-    print('POLS304.1 in courses:', 'POLS304.1' in courses)
-    print('POLS304.1 enrollment:', get_enrollment('POLS304.1'))
-    print('--- End POLS304.1 debug ---')
-
-    # Diagnostic: Print all schedule entries with base code POLS304
-    print('--- POLS304 schedule entries debug ---')
-    for s in schedule:
-        if s['course_code'].split('.')[0] == 'POLS304':
-            print(f"Schedule entry: {s['course_code']} at {s['time']} in {s['room']}")
-    print('--- End POLS304 schedule entries debug ---')
 
     # Decision variables: x[c, r, t] = 1 if course c assigned to room r at time t
     x = pulp.LpVariable.dicts('assign', ((c, r, t) for c in courses for r in rooms for t in course_times[c]), cat='Binary')
@@ -1109,7 +1072,6 @@ def main():
 
     assigned_courses = 0
     excel_rows_written = 0
-    print('\n--- Excel output course codes (one row per course, up to two times) ---')
     multimedia_courses_set = set(['ELIT103.1', 'ELIT103.2', 'VA312.1', 'VA312.2', 'VA451.1'])
     force_multimedia_courses = set(['VA312.1', 'VA312.2'])
     fba_courses_set = set(['IBF407.1', 'MAN328.1', 'MAN406.1'])
@@ -1350,7 +1312,6 @@ def main():
             assigned_courses += 1
         ws.append([c, assigned_room1 or '', t1, assigned_room2 or '', t2, enrollment, cap1, cap2, status])
         excel_rows_written += 1
-    print(f'Total courses: {len(courses)}, Excel rows written: {excel_rows_written}')
     wb.save('course_assignments.xlsx')
     print(f"\nResults saved to course_assignments.xlsx. Total assigned courses: {assigned_courses} out of {len(courses)}")
 
