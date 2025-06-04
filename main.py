@@ -462,21 +462,22 @@ def main():
                         prob += x[c2, p['room'], p['time']] == 0
     # --- End fixed assignments ---
 
-    # --- Add fixed assignment for ECON108.1 to B F1.2 - Class/Econ Lab ---
-    econ_room = 'B F1.2 - Class/Econ Lab'
+    # --- Force ECON108.1 to be assigned to B F1.2 - Class/ECON Lab (ignore capacity) ---
+    econ_room = 'B F1.2 - Class/ECON Lab'
     econ_course = 'ECON108.1'
-    # Find the scheduled time for ECON108.1
-    econ_times = course_times.get(econ_course, [])
-    for econ_time in econ_times:
-        # Fix assignment
-        if (econ_course, econ_room, econ_time) in x:
-            prob += x[econ_course, econ_room, econ_time] == 1
-            # Block this room at this time for all other courses
-            for c2 in courses:
-                if c2 != econ_course and econ_time in course_times.get(c2, []):
-                    if (c2, econ_room, econ_time) in x:
-                        prob += x[c2, econ_room, econ_time] == 0
-    # --- End fixed assignment for ECON108.1 ---
+    for t in course_times.get(econ_course, []):
+        for r in rooms:
+            if r == econ_room:
+                if (econ_course, r, t) in x:
+                    prob += x[econ_course, r, t] == 1
+            else:
+                if (econ_course, r, t) in x:
+                    prob += x[econ_course, r, t] == 0
+        for c2 in courses:
+            if c2 != econ_course and t in course_times.get(c2, []):
+                if (c2, econ_room, t) in x:
+                    prob += x[c2, econ_room, t] == 0
+    # --- End force for ECON108.1 ---
 
     # --- Add fixed assignment for BUS602.1 and MBA581.1 to B F1.2 - Class/ECON Lab (force even if capacity is not enough) ---
     econ_room = 'B F1.2 - Class/ECON Lab'
@@ -671,7 +672,6 @@ def main():
     b_f1_10_courses_set = set(b_f1_10_courses)
     for course in b_f1_10_courses:
         for t in course_times.get(course, []):
-            enrollment = get_enrollment(course)
             # Force assignment to B F1.10 Class/ART Studio regardless of capacity
             for r in rooms:
                 if r == b_f1_10_room:
@@ -1182,6 +1182,11 @@ def main():
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
+            # --- Assignment status for ECON108.1
+            if c == 'ECON108.1':
+                assigned_to_econ_lab = (assigned_room1 == econ_room) or (assigned_room2 == econ_room)
+                if assigned_to_econ_lab:
+                    status = 'Assigned (ECON Lab)'
             # --- Assignment status for MAC Studio graduate courses ---
             elif c in mac_grad_courses_set:
                 assigned_to_mac = (assigned_room1 == mac_room) or (assigned_room2 == mac_room)
@@ -1267,7 +1272,7 @@ def main():
                 econ_lab_courses = set(['BUS602.1', 'MBA581.1', 'ECON506.1', 'ECON601.1', 'ECON 601.1'])
                 econ_lab_room = 'B F1.2 - Class/ECON Lab'
                 if c in econ_lab_courses:
-                    assigned_to_econ_lab = (assigned_room1 == econ_lab_room) or (assigned_room2 == econ_lab_room)
+                    assigned_to_econ_lab = (assigned_room1 == econ_room) or (assigned_room2 == econ_room)
                     if assigned_to_econ_lab:
                         status = 'Assigned (ECON Lab)'
                     else:
