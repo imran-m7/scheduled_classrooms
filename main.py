@@ -844,6 +844,46 @@ def main():
                         prob += x[c2, big_arch_room, t] == 0
     # --- End fixed assignment for ARCH100.1, ARCH108.1, ARCH201.1 ---
 
+    # --- Add fixed assignment for ARCH108.2, ARCH202.1, ARCH303.2, ARCH308.1 to A F3.7 - Small Architecture Studio ---
+    small_arch_room = 'A F3.7 - Small Architecture Studio'
+    small_arch_courses = ['ARCH108.2', 'ARCH202.1', 'ARCH303.2', 'ARCH308.1']
+    for course in small_arch_courses:
+        for t in course_times.get(course, []):
+            # Force assignment to Small Architecture Studio regardless of capacity
+            for r in rooms:
+                if r == small_arch_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, small_arch_room, t) in x:
+                        prob += x[c2, small_arch_room, t] == 0
+    # --- End fixed assignment for ARCH108.2, ARCH202.1, ARCH303.2, ARCH308.1 ---
+
+    # --- Add fixed assignment for ARCH211.1, ARCH303.1, ARCH403.1, ARCH405.1, ARCH412.1 to A F2.16 - Architecture Studio ---
+    f2_16_room = 'A F2.16 - Architecture Studio'
+    f2_16_courses = ['ARCH211.1', 'ARCH303.1', 'ARCH403.1', 'ARCH405.1', 'ARCH412.1']
+    for course in f2_16_courses:
+        for t in course_times.get(course, []):
+            # Force assignment to A F2.16 - Architecture Studio regardless of capacity
+            for r in rooms:
+                if r == f2_16_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, f2_16_room, t) in x:
+                        prob += x[c2, f2_16_room, t] == 0
+    # --- End fixed assignment for ARCH211.1, ARCH303.1, ARCH403.1, ARCH405.1, ARCH412.1 ---
+
     # Solve
     prob.solve()
 
@@ -988,6 +1028,22 @@ def main():
                 assigned_to_f3_10 = (assigned_room1 == a_f3_10_room) or (assigned_room2 == a_f3_10_room)
                 if assigned_to_f3_10:
                     status = 'Assigned (A F3.10 - Architecture Classroom)'
+                else:
+                    infeasible = all(enrollment > capacities[r] for r in rooms)
+                    status = 'Infeasible' if infeasible else 'Unassigned'
+            # --- Assignment status for Small Architecture Studio courses ---
+            elif c in ['ARCH108.2', 'ARCH202.1', 'ARCH303.2', 'ARCH308.1']:
+                assigned_to_small_arch = (assigned_room1 == small_arch_room) or (assigned_room2 == small_arch_room)
+                if assigned_to_small_arch:
+                    status = 'Assigned (A F3.7 - Small Architecture Studio)'
+                else:
+                    infeasible = all(enrollment > capacities[r] for r in rooms)
+                    status = 'Infeasible' if infeasible else 'Unassigned'
+            # --- Assignment status for A F2.16 - Architecture Studio courses ---
+            elif c in ['ARCH211.1', 'ARCH303.1', 'ARCH403.1', 'ARCH405.1', 'ARCH412.1']:
+                assigned_to_f2_16 = (assigned_room1 == f2_16_room) or (assigned_room2 == f2_16_room)
+                if assigned_to_f2_16:
+                    status = 'Assigned (A F2.16 - Architecture Studio)'
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
