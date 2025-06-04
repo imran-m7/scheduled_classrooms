@@ -150,8 +150,7 @@ def main():
         enrollments_raw['ENS209'] = ens209_total
     print(f"DEBUG: ENS209 merged total enrollment: {ens209_total}")
 
-    # Special case: merge ARCH216.1 and ARCH216-6.1 into ARCH216
-    print("DEBUG: ARCH216.1 and ARCH216-6.1 enrollments before merge:")
+    # Special case: merge ARCH216.1 and ARCH216-6.1 enrollments before merge:")
     arch216_total = 0
     arch216_1_found = False
     arch216_6_found = False
@@ -690,7 +689,7 @@ def main():
 
     # --- Add preferred assignment for A F3.10 - Architecture Classroom courses ---
     a_f3_10_room = 'A F3.10 - Architecture Classroom'
-    a_f3_10_courses_set = set(['ARCH510.1', 'ARCH517.1', 'ARCH569.1'])
+    a_f3_10_courses_set = set(['ARCH510.1', 'ARCH517.1', 'ARCH569.1', 'ARCH101.1', 'ARCH307.1', 'ARCH304.1'])
     for course in a_f3_10_courses_set:
         for t in course_times.get(course, []):
             enrollment = get_enrollment(course)
@@ -803,6 +802,26 @@ def main():
                         prob += x[c2, mac_room, t] == 0
     # --- End fixed assignment for VA502.1, VA517.1, VA519.1 ---
 
+    # --- Add fixed assignment for ARCH100.1, ARCH108.1, ARCH201.1 to A F3.8 - Big Architecture Studio ---
+    big_arch_room = 'A F3.8 - Big Architecture Studio'
+    big_arch_courses = ['ARCH100.1', 'ARCH108.1', 'ARCH201.1']
+    for course in big_arch_courses:
+        for t in course_times.get(course, []):
+            # Force assignment to Big Architecture Studio regardless of capacity
+            for r in rooms:
+                if r == big_arch_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, big_arch_room, t) in x:
+                        prob += x[c2, big_arch_room, t] == 0
+    # --- End fixed assignment for ARCH100.1, ARCH108.1, ARCH201.1 ---
+
     # Solve
     prob.solve()
 
@@ -881,6 +900,7 @@ def main():
     fba_courses_set = set(['IBF407.1', 'MAN328.1', 'MAN406.1'])
     fba_room = 'B F1.1 FBA Graduate Seminar Room'
     mac_grad_courses_set = set(['VA502.1', 'VA517.1', 'VA519.1'])
+    big_arch_courses_set = set(['ARCH100.1', 'ARCH108.1', 'ARCH201.1'])
     for c in courses:
         enrollment = get_enrollment(c)
         # If course is a two-day course, use the provided times
@@ -930,6 +950,14 @@ def main():
                 assigned_to_mac = (assigned_room1 == mac_room) or (assigned_room2 == mac_room)
                 if assigned_to_mac:
                     status = 'Assigned (MAC Studio)'
+                else:
+                    infeasible = all(enrollment > capacities[r] for r in rooms)
+                    status = 'Infeasible' if infeasible else 'Unassigned'
+            # --- Assignment status for Big Architecture Studio courses ---
+            elif c in big_arch_courses_set:
+                assigned_to_big_arch = (assigned_room1 == big_arch_room) or (assigned_room2 == big_arch_room)
+                if assigned_to_big_arch:
+                    status = 'Assigned (Big Architecture Studio)'
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
