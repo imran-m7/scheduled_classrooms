@@ -964,6 +964,40 @@ def main():
                         prob += x[c2, af13_lab_room, t] == 0
     # --- End fixed assignment for ARCH208.1, ARCH208.2, ARCH216, ARCH360.1 ---
 
+    # --- Special case: Assign ARCH210.1, ARCH311.1, ARCH358.1 to combined studio, allowing overlap for ARCH311.1 and ARCH358.1 ---
+    combined_studio_room = 'A F3.7 - Small Architecture Studio & A F3.8 - Big Architecture Studio'
+    # 1. Force ARCH311.1 and ARCH358.1 to overlap in the combined studio at their common time(s)
+    arch311_358_times = set(course_times.get('ARCH311.1', [])) & set(course_times.get('ARCH358.1', []))
+    for t in arch311_358_times:
+        for course in ['ARCH311.1', 'ARCH358.1']:
+            for r in rooms:
+                if r == combined_studio_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+        # Block all other courses from this room at this time
+        for c2 in courses:
+            if c2 not in ['ARCH311.1', 'ARCH358.1'] and t in course_times.get(c2, []):
+                if (c2, combined_studio_room, t) in x:
+                    prob += x[c2, combined_studio_room, t] == 0
+    # 2. Assign ARCH210.1 to the combined studio at its scheduled time (no overlap allowed)
+    for t in course_times.get('ARCH210.1', []):
+        for r in rooms:
+            if r == combined_studio_room:
+                if ('ARCH210.1', r, t) in x:
+                    prob += x['ARCH210.1', r, t] == 1
+            else:
+                if ('ARCH210.1', r, t) in x:
+                    prob += x['ARCH210.1', r, t] == 0
+        # Block this room at this time for all other courses
+        for c2 in courses:
+            if c2 != 'ARCH210.1' and t in course_times.get(c2, []):
+                if (c2, combined_studio_room, t) in x:
+                    prob += x[c2, combined_studio_room, t] == 0
+    # --- End special case for combined studio ---
+
     # Solve
     prob.solve()
 
@@ -1148,6 +1182,14 @@ def main():
                 assigned_to_af13_lab = (assigned_room1 == af13_lab_room) or (assigned_room2 == af13_lab_room)
                 if assigned_to_af13_lab:
                     status = 'Assigned (Special Lab)'
+                else:
+                    infeasible = all(enrollment > capacities[r] for r in rooms)
+                    status = 'Infeasible' if infeasible else 'Unassigned'
+            # --- Assignment status for combined architecture studio courses ---
+            elif c in ['ARCH210.1', 'ARCH311.1', 'ARCH358.1']:
+                assigned_to_combined = (assigned_room1 == combined_studio_room) or (assigned_room2 == combined_studio_room)
+                if assigned_to_combined:
+                    status = 'Assigned (Two Architecture Studios Used)'
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
