@@ -884,6 +884,46 @@ def main():
                         prob += x[c2, f2_16_room, t] == 0
     # --- End fixed assignment for ARCH211.1, ARCH303.1, ARCH403.1, ARCH405.1, ARCH412.1 ---
 
+    # --- Add fixed assignment for ARCH202.3, ARCH304.2, ARCH414.1 to A F2.8 - Drawing Studio ---
+    f2_8_room = 'A F2.8 - Drawing Studio'
+    f2_8_courses = ['ARCH202.3', 'ARCH304.2', 'ARCH414.1']
+    for course in f2_8_courses:
+        for t in course_times.get(course, []):
+            # Force assignment to A F2.8 - Drawing Studio regardless of capacity
+            for r in rooms:
+                if r == f2_8_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, f2_8_room, t) in x:
+                        prob += x[c2, f2_8_room, t] == 0
+    # --- End fixed assignment for ARCH202.3, ARCH304.2, ARCH414.1 ---
+
+    # --- Add fixed assignment for ARCH201.2 to A B.8 - Fabrication Lab ---
+    fabrication_lab_room = 'A B.8 - Fabrication Lab'
+    fabrication_lab_courses = ['ARCH201.2']
+    for course in fabrication_lab_courses:
+        for t in course_times.get(course, []):
+            # Force assignment to A B.8 - Fabrication Lab regardless of capacity
+            for r in rooms:
+                if r == fabrication_lab_room:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 1
+                else:
+                    if (course, r, t) in x:
+                        prob += x[course, r, t] == 0
+            # Block this room at this time for all other courses
+            for c2 in courses:
+                if c2 != course and t in course_times.get(c2, []):
+                    if (c2, fabrication_lab_room, t) in x:
+                        prob += x[c2, fabrication_lab_room, t] == 0
+    # --- End fixed assignment for ARCH201.2 ---
+
     # Solve
     prob.solve()
 
@@ -1031,19 +1071,19 @@ def main():
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
-            # --- Assignment status for Small Architecture Studio courses ---
-            elif c in ['ARCH108.2', 'ARCH202.1', 'ARCH303.2', 'ARCH308.1']:
-                assigned_to_small_arch = (assigned_room1 == small_arch_room) or (assigned_room2 == small_arch_room)
-                if assigned_to_small_arch:
-                    status = 'Assigned (A F3.7 - Small Architecture Studio)'
+            # --- Assignment status for A F2.8 - Drawing Studio courses ---
+            elif c in ['ARCH202.3', 'ARCH304.2', 'ARCH414.1']:
+                assigned_to_f2_8 = (assigned_room1 == f2_8_room) or (assigned_room2 == f2_8_room)
+                if assigned_to_f2_8:
+                    status = 'Assigned (A F2.8 - Drawing Studio)'
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
-            # --- Assignment status for A F2.16 - Architecture Studio courses ---
-            elif c in ['ARCH211.1', 'ARCH303.1', 'ARCH403.1', 'ARCH405.1', 'ARCH412.1']:
-                assigned_to_f2_16 = (assigned_room1 == f2_16_room) or (assigned_room2 == f2_16_room)
-                if assigned_to_f2_16:
-                    status = 'Assigned (A F2.16 - Architecture Studio)'
+            # --- Assignment status for A B.8 - Fabrication Lab courses ---
+            elif c in ['ARCH201.2']:
+                assigned_to_fab_lab = (assigned_room1 == fabrication_lab_room) or (assigned_room2 == fabrication_lab_room)
+                if assigned_to_fab_lab:
+                    status = 'Assigned (A B.8 - Fabrication Lab)'
                 else:
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
