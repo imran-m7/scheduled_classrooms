@@ -687,31 +687,9 @@ def main():
                         prob += x[c2, b_f1_10_room, t] == 0
     # --- End preferred assignment for B F1.10 Class/ART Studio courses ---
 
-    # --- Special case: Force ARCH109.1 and ARCH109.2 to overlap in A F3.10 - Architecture Classroom ---
-    arch109_courses = ['ARCH109.1', 'ARCH109.2']
-    arch109_room = 'A F3.10 - Architecture Classroom'
-    # Find all times where both courses are scheduled
-    arch109_times = set(course_times.get('ARCH109.1', [])) & set(course_times.get('ARCH109.2', []))
-    for t in arch109_times:
-        # Force both courses to be assigned to A F3.10 at this time
-        for course in arch109_courses:
-            for r in rooms:
-                if r == arch109_room:
-                    if (course, r, t) in x:
-                        prob += x[course, r, t] == 1
-                else:
-                    if (course, r, t) in x:
-                        prob += x[course, r, t] == 0
-        # Block all other courses from this room at this time
-        for c2 in courses:
-            if c2 not in arch109_courses and t in course_times.get(c2, []):
-                if (c2, arch109_room, t) in x:
-                    prob += x[c2, arch109_room, t] == 0
-    # --- End special case for ARCH109.1 and ARCH109.2 ---
-
     # --- Add preferred assignment for A F3.10 - Architecture Classroom courses ---
     a_f3_10_room = 'A F3.10 - Architecture Classroom'
-    a_f3_10_courses_set = set(['ARCH510.1', 'ARCH517.1', 'ARCH569.1', 'ARCH101.1', 'ARCH307.1', 'ARCH304.1'])
+    a_f3_10_courses_set = set(['ARCH510.1', 'ARCH517.1', 'ARCH569.1', 'ARCH101.1', 'ARCH307.1', 'ARCH304.1', 'ARCH109.2'])
     for course in a_f3_10_courses_set:
         for t in course_times.get(course, []):
             enrollment = get_enrollment(course)
@@ -886,7 +864,7 @@ def main():
 
     # --- Add fixed assignment for ARCH202.3, ARCH304.2, ARCH414.1 to A F2.8 - Drawing Studio ---
     f2_8_room = 'A F2.8 - Drawing Studio'
-    f2_8_courses = ['ARCH202.3', 'ARCH304.2', 'ARCH414.1']
+    f2_8_courses = ['ARCH202.3', 'ARCH304.2', 'ARCH414.1', 'ARCH109.1']
     for course in f2_8_courses:
         for t in course_times.get(course, []):
             # Force assignment to A F2.8 - Drawing Studio regardless of capacity
@@ -1204,13 +1182,7 @@ def main():
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
             # --- Assignment status for ARCH109.1 and ARCH109.2 ---
-            elif c in ['ARCH109.1', 'ARCH109.2']:
-                assigned_to_f3_10 = (assigned_room1 == a_f3_10_room) or (assigned_room2 == a_f3_10_room)
-                if assigned_to_f3_10:
-                    status = 'Assigned (A F3.10 - Architecture Classroom)'
-                else:
-                    infeasible = all(enrollment > capacities[r] for r in rooms)
-                    status = 'Infeasible' if infeasible else 'Unassigned'
+            # (Removed: handled by specific room blocks below)
             # --- Assignment status for Small Architecture Studio courses ---
             elif c in ['ARCH108.2', 'ARCH202.1', 'ARCH303.2', 'ARCH308.1', 'ARCH106.1']:
                 assigned_to_small_arch = (assigned_room1 == small_arch_room) or (assigned_room2 == small_arch_room)
@@ -1220,7 +1192,7 @@ def main():
                     infeasible = all(enrollment > capacities[r] for r in rooms)
                     status = 'Infeasible' if infeasible else 'Unassigned'
             # --- Assignment status for A F2.8 - Drawing Studio courses ---
-            elif c in ['ARCH202.3', 'ARCH304.2', 'ARCH414.1']:
+            elif c in ['ARCH202.3', 'ARCH304.2', 'ARCH414.1', 'ARCH109.1']:
                 assigned_to_f2_8 = (assigned_room1 == f2_8_room) or (assigned_room2 == f2_8_room)
                 if assigned_to_f2_8:
                     status = 'Assigned (A F2.8 - Drawing Studio)'
