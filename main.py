@@ -1150,6 +1150,15 @@ def main():
                 assigned_to_econ_lab = (assigned_room1 == econ_room) or (assigned_room2 == econ_room)
                 if assigned_to_econ_lab:
                     status = 'Assigned (ECON Lab)'
+            # --- Assignment status for MATH201.1 ---
+            elif c == 'MATH201.1':
+                math201_room = 'B F1.23 - Amphitheater I'
+                assigned_to_math201_room = (assigned_room1 == math201_room) or (assigned_room2 == math201_room)
+                if assigned_to_math201_room:
+                    status = 'Assigned (Special Case due to Capacity)'
+                else:
+                    infeasible = all(enrollment > capacities[r] for r in rooms)
+                    status = 'Infeasible' if infeasible else 'Unassigned'
             # --- Assignment status for MAC Studio graduate courses ---
             elif c in mac_grad_courses_set:
                 assigned_to_mac = (assigned_room1 == mac_room) or (assigned_room2 == mac_room)
