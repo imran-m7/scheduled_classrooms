@@ -263,9 +263,13 @@ def main():
     # Build a set of (course, time) pairs to pre-assign
     preassigned = []  # list of dicts: {course_code, time, room}
     used_lab_times = set()  # (room, time) pairs already taken
+    # Special case: ENS207 must be assigned to B F1.25 Computer Lab regardless of capacity
     for s in schedule:
-        if s['course_code'] in special_lab_courses:
-            # Assign to first available computer lab room at that time
+        if s['course_code'] == 'ENS207':
+            preassigned.append({'course_code': 'ENS207', 'time': s['time'], 'room': 'B F1.25 Computer Lab'})
+            used_lab_times.add(('B F1.25 Computer Lab', s['time']))
+        elif s['course_code'] in special_lab_courses:
+            # Assign to first available computer lab room at that time (normal logic)
             assigned = False
             for lab_room in computer_lab_rooms:
                 if (lab_room, s['time']) not in used_lab_times and capacities[lab_room] >= get_enrollment(s['course_code']):
