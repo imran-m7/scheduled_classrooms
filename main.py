@@ -1027,7 +1027,6 @@ def main():
     prob.solve()
 
     # Output results
-    print('Status:', pulp.LpStatus[prob.status])
     assigned_courses = 0
     total_unused_seat_hours = 0
     for c in courses:
