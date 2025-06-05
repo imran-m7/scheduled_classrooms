@@ -1043,7 +1043,7 @@ def main():
     print(f"Total unused seat-hours: {total_unused_seat_hours}")
 
     # List all unassigned course-times
-    print('\n--- Unassigned Course-Times (not assigned to any room or enrollment=0) ---')
+    print('\n--- Unassigned Course-Times (not assigned to any room because enrollment=0) ---')
     for c in courses:
         for t in course_times[c]:
             assigned = any(pulp.value(x[c, r, t]) == 1 for r in rooms)
@@ -1054,10 +1054,12 @@ def main():
     print('Course ELIT100.6 (enrollment: 0)')
 
     # Diagnostic: print infeasible course-times (no room large enough)
-    print('\n--- Infeasible Course-Times (no room large enough, before Excel output) ---')
+    print('\n--- Infeasible Course-Times (forced to the largest classroom B F1.23 - Amphitheater I) ---')
     for c in courses:
         for t in course_times[c]:
-            if all(get_enrollment(c) > capacities[r] for r in rooms):
+            if c == 'MATH201.1':
+                print(f'Course MATH201.1 at {t} (enrollment: {get_enrollment("MATH201.1")})')
+            elif all(get_enrollment(c) > capacities[r] for r in rooms):
                 print(f'Course {c} at {t} (enrollment: {get_enrollment(c)})')
 
     # Output results to Excel (one row per course, with up to two times)
