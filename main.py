@@ -943,6 +943,25 @@ def main():
                     prob += x[c2, combined_studio_room, t] == 0
     # --- End special case for combined studio ---
 
+    # --- Add fixed assignment for MATH201.1 to B F1.23 - Amphitheater I ---
+    math201_room = 'B F1.23 - Amphitheater I'
+    math201_course = 'MATH201.1'
+    for t in course_times.get(math201_course, []):
+        # Force assignment to Amphitheater regardless of capacity
+        for r in rooms:
+            if r == math201_room:
+                if (math201_course, r, t) in x:
+                    prob += x[math201_course, r, t] == 1
+            else:
+                if (math201_course, r, t) in x:
+                    prob += x[math201_course, r, t] == 0
+        # Block this room at this time for all other courses
+        for c2 in courses:
+            if c2 != math201_course and t in course_times.get(c2, []):
+                if (c2, math201_room, t) in x:
+                    prob += x[c2, math201_room, t] == 0
+    # --- End fixed assignment for MATH201.1 ---
+
     # --- Block regular courses from being assigned to specialized classrooms ---
     specialized_classrooms = [
         'B F1.25 Computer Lab',
@@ -993,7 +1012,7 @@ def main():
         'VA211.1', 'VA211.2', 'VA304.1', 'VA315.1', 'VA323.1', 'VA323.2', 'VA406.1', 'VA416.1', 'VA443.1', 'VA452.1', 'VA455.1',
         'VA104.1', 'VA104.2', 'VA310.1', 'VA217.1', 'VA217.2', 'VA217.3', 'VA334.1',
         'PSY519.1', 'PSY524.1', 'PSY529.1',
-        'BUS602.1', 'MBA581.1', 'ECON506.1', 'ECON601.1', 'ECON 601.1', 'ECON108.1',
+        'BUS602.1', 'MBA581.1', 'ECON506.1', 'ECON601.1', 'ECON 601.1', 'ECON108.1', 'MATH201.1',
     ])
     for c in courses:
         if c in special_courses:
