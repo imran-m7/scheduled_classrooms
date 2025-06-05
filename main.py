@@ -1043,7 +1043,7 @@ def main():
     print(f"Total unused seat-hours: {total_unused_seat_hours}")
 
     # List all unassigned course-times
-    print('\n--- Unassigned Course-Times (not assigned to any room because enrollment=0) ---')
+    print('\n--- Unassigned Course-Times (not assigned to any room or enrollment=0) ---')
     for c in courses:
         for t in course_times[c]:
             assigned = any(pulp.value(x[c, r, t]) == 1 for r in rooms)
