@@ -1034,7 +1034,10 @@ def main():
             assigned = False
             for r in rooms:
                 if pulp.value(x[c, r, t]) == 1:
-                    total_unused_seat_hours += capacities[r] - get_enrollment(c)
+                    unused = capacities[r] - get_enrollment(c)
+                    if unused < 0:
+                        unused = 0
+                    total_unused_seat_hours += unused  # duration is 1 by default, adjust if needed
                     assigned = True
             if assigned:
                 assigned_courses += 1
