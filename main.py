@@ -237,17 +237,27 @@ def main():
     def parse_duration(time_str):
         match = re.search(r'(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})', time_str)
         if not match:
-            return 1  # Default to 1 hour if format is missing
+            return 1  # fallback if parsing fails
         h1, m1, h2, m2 = map(int, match.groups())
         start = h1 * 60 + m1
         end = h2 * 60 + m2
         duration_min = end - start
         if duration_min <= 60:
             return 1
-        elif duration_min <= 120:
+        elif duration_min > 60 and duration_min <= 120:
             return 2
-        else:
+        elif duration_min > 120 and duration_min <= 180:
             return 3
+        elif duration_min > 180 and duration_min <= 240:
+            return 4
+        elif duration_min > 240 and duration_min <= 300:
+            return 5
+        elif duration_min > 300 and duration_min <= 360:
+            return 6
+        elif duration_min > 360 and duration_min <= 420:
+            return 7
+        else:
+            return 7  # cap at 7 hours
 
     # --- Special Classroom Pre-Assignment Logic ---
     # Identify all computer lab rooms
@@ -1037,7 +1047,8 @@ def main():
                     unused = capacities[r] - get_enrollment(c)
                     if unused < 0:
                         unused = 0
-                    total_unused_seat_hours += unused  # duration is 1 by default, adjust if needed
+                    duration = parse_duration(t)
+                    total_unused_seat_hours += unused * duration
                     assigned = True
             if assigned:
                 assigned_courses += 1
@@ -1277,6 +1288,7 @@ def main():
                             infeasible = all(enrollment > capacities[r] for r in rooms)
                             status = 'Infeasible' if infeasible else 'Unassigned'
                 # Special status for FBA Graduate Seminar Room courses
+
                 elif c in fba_courses_set:
                     assigned_to_fba = (assigned_room1 == fba_room) or (assigned_room2 == fba_room)
                     if assigned_to_fba:
